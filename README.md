@@ -1,43 +1,38 @@
-# Projeto-Integrador-II
+# Projeto Integrador-II - Detector de Fadiga de Motoristas
 
 Este repositório contém o desenvolvimento do projeto da disciplina de **Projeto Integrador II** do curso de Engenharia de Computação da **Universidade Federal de Santa Maria (UFSM)**.
-
-> ⚠️ **Status do Projeto:** O tema e o escopo do projeto estão atualmente em fase de definição pela equipe.
 
 ---
 
 ## 👥 Equipe
-* **Kléberson do Amaral da Silva** - [GitHub](https://github.com/)
-* **...** - [GitHub](https://github.com/)
-* **[Nome do Aluno 3]** - [GitHub](https://github.com/)
+* **Kléberson do Amaral da Silva** - [GitHub](https://github.com/KleberASilva/)
+* **Pedro ...** - [GitHub](https://github.com/)
+* **Vitor ...** - [GitHub](https://github.com/)
+* **Yuri ...** - [GitHub](https://github.com/)
 
 ---
 
-## 🎯 Sobre o Projeto (Em Breve)
-Esta seção será atualizada assim que a equipe definir a proposta final. O projeto integrará conhecimentos de hardware, software e redes para resolver um problema real.
+## 🎯 Sobre o Projeto
+Este projeto une tecnologia e segurança viária com o objetivo de salvar vidas no trânsito. O sistema utiliza a engenharia de computação para monitorar o comportamento de motoristas em tempo real. Através da análise de expressões faciais, o detector identifica sinais de sono, cansaço ou distração. Assim, o sistema emite alertas imediatos para evitar possíveis acidentes antes que eles aconteçam. (Arrumar !)
 
 ### Áreas de Exploração:
-* Sistemas Embarcados e Internet das Coisas (IoT)
-* Inteligência Artificial e Aprendizado de Máquina
-* Automação Industrial e Robótica
-* Desenvolvimento de Sistemas Distribuídos
-
+* **Visão Computacional:** Ensina o sistema a "ver" e reconhecer os olhos e o rosto do motorista.
+* **Inteligência Artificial:** Permite que o programa aprenda a diferenciar um piscar de olhos normal de um sinal de fadiga.
+* **Sistemas Embarcados:** Adapta o software para rodar em dispositivos físicos pequenos dentro do veículo.
+* **Processamento de Sinais:** Ajuda a analisar os dados capturados pela câmera de forma rápida e eficiente.
 ---
 
-## 🛠️ Tecnologias Pré-Selecionadas
-*A lista abaixo poderá mudar conforme o avanço das discussões.*
-* **Linguagens:** C/C++, Python
-* **Hardware:** Arduino, ESP32 ou Raspberry Pi
+## 🛠️ Tecnologias Selecionadas
+* **Linguagens:** Python
+* **Hardware:** 
 * **Ferramentas:** Git, GitHub
 
 ---
 
 ## 📂 Estrutura do Repositório
-* `docs/`: Documentação, relatórios e artigos do projeto.
-* `src/`: Código-fonte do sistema.
-* `hardware/`: Esquemas elétricos e designs de placas (se houver).
+* Arrumar
 
 ---
 
 ## 🎓 Professores Orientadores
-* **[Nome do Professor 1]**
+* **Lucas Feksa** (Arrumar!!!)
