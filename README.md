@@ -1,96 +1,87 @@
-# NOME do projeto — Sistema Embarcado de Monitoramento de Motoristas
+# Detector de Fadiga Automotivo Baseado em Visão Computacional Embarcada e IoT
 
 Repositório destinado ao desenvolvimento do projeto da disciplina de **Projeto Integrador II**, do curso de **Engenharia de Computação da Universidade Federal de Santa Maria (UFSM)**.
 
-O **Nome do projeto definir** propõe o desenvolvimento de um protótipo embarcado para monitoramento de motoristas, utilizando **visão computacional e sensores fisiológicos** para identificar possíveis sinais de fadiga, distração e alterações nos parâmetros monitorados.
+O projeto propõe o desenvolvimento de um **protótipo embarcado, funcional e de baixo custo**, para monitoramento de motoristas, utilizando **visão computacional (Edge Computing)** e, experimentalmente, **sensores fisiológicos**, para identificar sinais de fadiga, sonolência e distração ao volante.
 
 ---
 
 ### Equipe
 
 * **Kléberson do Amaral da Silva** — [GitHub](https://github.com/KleberASilva/)
-* **Pedro Lucca Menezes Vitalis** — [GitHub](https://github.com/)
-* **Vitor Carvalho de Araujo** — [GitHub](https://github.com/)
-* **Yuri Silveira Pereira** — [GitHub](https://github.com/)
+* **Pedro Lucca Menezes Vitalis** — [GitHub](https://github.com/pedrovitalis)
+* **Vitor Carvalho de Araujo** — [GitHub](https://github.com/arauvitor)
+* **Yuri Silveira Pereira** — [GitHub](https://github.com/slaycker13)
+
+**Orientador:** Prof. Lucas Feksa Ramos
 
 ---
 
 ### Sobre o Projeto
 
-O **NOME** é um protótipo de sistema embarcado voltado ao **monitoramento de motoristas**, com foco na identificação de possíveis situações de **fadiga e distração durante a condução**.
+A fadiga ao volante é uma das principais causas de acidentes de trânsito, respondendo por uma parcela significativa dos sinistros no país. Grande parte das soluções comerciais de detecção de fadiga exige hardware proprietário de alto custo ou depende do envio contínuo de imagens do motorista para processamento em nuvem, o que gera custos de conectividade e levanta questões de privacidade.
 
-O sistema utilizará uma **câmera modular conectada a um microcontrolador da família ESP** para capturar informações visuais do motorista. A partir das imagens, serão analisados indicadores como:
+Este projeto propõe uma alternativa: um dispositivo embarcado que realiza **todo o processamento localmente (Edge Computing)**, sem transmitir imagens para fora do veículo, utilizando uma **câmera modular conectada a um microcontrolador da família ESP**.
 
-* Abertura e fechamento dos olhos;
-* Duração dos períodos com os olhos fechados;
-* Frequência de piscadas;
-* Possíveis bocejos;
-* Orientação e movimentação da cabeça;
-* Permanência da cabeça desviada da posição considerada normal.
+A partir da imagem capturada, o sistema extrai landmarks faciais e calcula três indicadores principais:
 
-O projeto também prevê a utilização de **sensores de contato no volante** para aquisição experimental de sinais fisiológicos, permitindo complementar o monitoramento visual com informações relacionadas ao estado do motorista.
+* **EAR (Eye Aspect Ratio)** — abertura/fechamento dos olhos, usado para detectar micro-sonos e fechamento prolongado das pálpebras;
+* **MAR (Mouth Aspect Ratio)** — identificação de bocejos;
+* **Head Pose Estimation** — orientação e inclinação da cabeça, usada para detectar relaxamento cervical ("cabeceadas").
 
-A partir dos dados coletados, o sistema poderá gerar indicadores de **fadiga, distração e sinais fisiológicos**, além de um nível geral de risco. Em situações que ultrapassem determinados parâmetros, serão gerados **alertas ao motorista** e os eventos poderão ser registrados para posterior análise.
+Para viabilizar o processamento em hardware modesto e evitar sobreaquecimento, a captura de vídeo utiliza **baixo framerate (subamostragem temporal)**, o que também ajuda a filtrar piscadas normais e focar em anomalias prolongadas.
 
-> **Observação:** Nao temos observação ainda
+O sistema também prevê a possibilidade de integração experimental de **sensores fisiológicos de contato no volante** (ex.: ECG via divisor de tensão), como validação complementar, dependendo do avanço do cronograma.
+
+Quando um limiar de fadiga é ultrapassado, o dispositivo aciona um **alarme local (buzzer/LEDs)** e envia via **Wi-Fi** apenas dados textuais mínimos (timestamp + classificação do evento) para fins de **telemetria e posterior validação do algoritmo**, sem transmitir imagens.
 
 ---
 
 ### Áreas de Exploração
 
 #### Visão Computacional
-
 Processamento das imagens da câmera para identificação do rosto, olhos, boca e orientação da cabeça do motorista.
 
 #### Inteligência Artificial
-
 Exploração de técnicas de reconhecimento e classificação de padrões relacionados à fadiga e distração.
 
 #### Sistemas Embarcados
-
-Desenvolvimento da unidade embarcada utilizando microcontroladores da família ESP e integração com os sensores e dispositivos de captura.
+Desenvolvimento da unidade embarcada utilizando microcontroladores da família ESP e integração com sensores e dispositivos de captura.
 
 #### Internet das Coisas (IoT)
-
-Comunicação entre o dispositivo embarcado, servidor e sistemas de monitoramento.
+Comunicação entre o dispositivo embarcado, servidor e sistemas de monitoramento, restrita ao envio de dados de telemetria.
 
 #### Processamento de Sinais
-
 Aquisição e análise experimental de sinais fisiológicos obtidos por sensores de contato no volante.
 
 #### Monitoramento e Análise de Dados
-
-Armazenamento, processamento e visualização dos dados coletados durante os testes.
+Armazenamento, processamento e visualização dos dados coletados durante os testes, incluindo o cruzamento entre eventos registrados e gravações de validação (ground truth).
 
 ---
 
 ### Tecnologias e Ferramentas
 
 #### Desenvolvimento
-
 * **Python** — desenvolvimento dos algoritmos;
 * **OpenCV** — processamento de imagens;
-* **MediaPipe ou ferramenta equivalente** — detecção de características faciais;
+* **MediaPipe / Dlib ou equivalente** — extração de landmarks e geometria facial;
 * **VS Code ou outros** — ambiente de desenvolvimento.
 
 #### Hardware e Sistemas Embarcados
-
-* **ESP32/ESP8266** — plataforma embarcada; (Ajustar escolha ainda)
+* **ESP32/ESP8266** — plataforma embarcada (ajustar escolha ainda);
 * **Câmera modular** — captura das imagens do motorista;
 * **Sensores de contato** — aquisição experimental de sinais fisiológicos;
-* **LEDs, buzzer e outros atuadores** — geração de alertas;
+* **LEDs, buzzer e outros atuadores** — geração de alertas locais;
 * **ElegantOTA** — atualização remota do firmware.
 
 #### IoT e Infraestrutura
-
 * **Ubuntu Server** — servidor para hospedagem dos serviços;
 * **Node-RED** — integração, automação e comunicação entre os componentes;
-* **InfluxDB** — armazenamento de séries temporais;
+* **InfluxDB** — armazenamento de séries temporais (telemetria);
 * **Grafana** — dashboards e visualização dos dados;
 * **ZeroTier** — comunicação remota e rede virtual.
 
 #### Desenvolvimento e Prototipagem
-
 * **Git** — controle de versão;
 * **GitHub** — hospedagem e colaboração no código;
 * **Tinkercad** — prototipagem e simulação de circuitos eletrônicos.
@@ -99,12 +90,14 @@ Armazenamento, processamento e visualização dos dados coletados durante os tes
 
 ### Estrutura do Repositório
 
-#### Definir organização do repo ainda
+
+### Como Clonar
+
 ---
 
 ### Status do Projeto
 
-**EM desenvolvimento**
+**Em desenvolvimento**
 
 ---
 
@@ -113,9 +106,10 @@ Armazenamento, processamento e visualização dos dados coletados durante os tes
 **Projeto Integrador II**
 **Curso:** Engenharia de Computação
 **Instituição:** Universidade Federal de Santa Maria — UFSM
-
-#### Orientação
-
-* **Prof. Lucas Feksa Ramos** — *a confirmar com ele ;-;*
+**Orientador:** Prof. Lucas Feksa Ramos
 
 ---
+
+### Licença
+
+Definir licença do repositório (ex.: MIT, GPL-3.0) — ver seção de configuração recomendada abaixo.
