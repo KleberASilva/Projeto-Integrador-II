@@ -3,7 +3,7 @@ import mediapipe as mp
 import time
 import csv
 from datetime import datetime
-from eye_detection import detectar_olhos
+from eye_detection import detectar_olhos, DetectorOlhos
 
 MODEL_PATH = "src/models/face_landmarker.task"
 
@@ -26,8 +26,13 @@ if not camera.isOpened():
     print("Não foi possível acessar a câmera.")
     exit()
 
-valores_ear = []
-limiar_ear = 0.19
+camera.set(cv2.CAP_PROP_FRAME_WIDTH, 1280)
+camera.set(cv2.CAP_PROP_FRAME_HEIGHT, 720)
+
+cv2.namedWindow("Face Landmarker", cv2.WINDOW_AUTOSIZE)
+
+detector_olhos = DetectorOlhos(tempo_calibracao=5)
+
 arquivo_csv = open(
     "src/data/telemetry/telemetria.csv",
     "w",
@@ -47,7 +52,6 @@ logger.writerow([
 ])
 
 inicio = time.time()
-inicio_olho_fechado = None
 
 with FaceLandmarker.create_from_options(options) as landmarker:
 
@@ -74,13 +78,26 @@ with FaceLandmarker.create_from_options(options) as landmarker:
 
             ear_direito, ear_esquerdo, ear_medio = detectar_olhos(landmarks)
 
-            if ear_medio < limiar_ear:
-                if inicio_olho_fechado is None:
-                    inicio_olho_fechado = time.time()
-                tempo_olho_fechado = time.time() - inicio_olho_fechado
+            tempo_atual = time.time() - inicio
+
+            olhos_fechados, tempo_olho_fechado = detector_olhos.atualizar(
+                ear_medio,
+                tempo_atual
+            )
+
+            if detector_olhos.calibrando:
+                print(
+                    f"Calibrando... "
+                    f"{tempo_atual:.1f}/{detector_olhos.tempo_calibracao:.1f}s"
+                )
             else:
-                inicio_olho_fechado = None
-                tempo_olho_fechado = 0
+                print(
+                    f"{tempo_atual:.2f}s | "
+                    f"EAR: {ear_medio:.3f} | "
+                    f"Referência: {detector_olhos.ear_referencia:.3f} | "
+                    f"Limiar: {detector_olhos.limiar_ear:.3f} | "
+                    f"Fechado: {tempo_olho_fechado:.2f}s"
+                )
 
             logger.writerow([
                 datetime.now().isoformat(),
@@ -91,16 +108,11 @@ with FaceLandmarker.create_from_options(options) as landmarker:
                 tempo_olho_fechado
             ])
 
-            valores_ear.append(ear_medio)
-
-            print(
-                f"{time.time() - inicio:.2f}s | "
-                f"EAR: {ear_medio:.3f} | "
-                f"Fechado: {tempo_olho_fechado:.2f}s"
-            )
+            estado_olhos = "FECHADOS" if olhos_fechados else "ABERTOS"
 
             texto = (
                 f"EAR: {ear_medio:.3f} | "
+                f"Olhos: {estado_olhos} | "
                 f"Fechado: {tempo_olho_fechado:.2f}s"
             )
 
