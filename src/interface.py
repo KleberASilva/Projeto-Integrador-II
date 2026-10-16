@@ -7,9 +7,9 @@ import time
 import cv2
 from PySide6.QtCore import Qt, QThread, QTimer, Signal
 from PySide6.QtGui import QImage, QPixmap
-from PySide6.QtWidgets import (
-    QApplication, QFrame, QHBoxLayout, QLabel, QPushButton, QTextEdit, QVBoxLayout, QWidget
-)
+from PySide6.QtWidgets import (QApplication, QFrame, QHBoxLayout, QLabel, QPushButton, QTextEdit, QVBoxLayout, QWidget)
+
+from monitoramento import MonitoramentoThread
 
 TEXT, MUTED = "#e7eef9", "#91a4bf"
 GREEN, YELLOW, RED, BLUE = "#39d98a", "#ffca58", "#ff5d6c", "#67a9ff"
@@ -20,6 +20,7 @@ DEMO_AUTOMATICA = False
 INTERVALO_DEMO = 5000    
 TEMPO_CALIBRACAO = 3.0   
 MAX_CAMERAS = 6          
+MODO_TESTE = False
 
 TELA_CHEIA = False           
 CORTAR_PARA_PREENCHER = True
@@ -120,7 +121,7 @@ class Interface(QWidget):
         self.setWindowTitle("Monitoramento de Fadiga")
         self.resize(1280, 800)
         self.setMinimumSize(900, 560)
-        self.estado = "ATENTO"
+        self.estado = "CALIBRANDO"
         self.thread = None
         self.som_tocando = False
         self.ultimo_alerta = {}
@@ -244,22 +245,88 @@ class Interface(QWidget):
 
     def _atualizar_medidas(self, info):
         if info:
-            pitch, yaw = info["pitch"], info["yaw"]
-            inclinada = abs(pitch) > LIMITE_PITCH or abs(yaw) > LIMITE_YAW
-            valores = [(f'{info["ear"]:.2f}', RED if info["ear"] < LIMIAR_EAR else TEXT),
-                       (f'{info["mar"]:.2f}', YELLOW if info["mar"] > LIMIAR_MAR else TEXT),
-                       (f"{pitch:+.0f}° / {yaw:+.0f}°", YELLOW if inclinada else TEXT)]
-            detalhe = f"fecha abaixo de {LIMIAR_EAR:.2f}"
+            ear = info.get("ear")
+            mar = info.get("mar")
+            pitch = info.get("pitch")
+            yaw = info.get("yaw")
+
+            limiar_ear = info.get("limiar_ear")
+            limiar_mar = info.get("limiar_mar")
+
+            def formatar(valor, casas=2):
+                return f"{valor:.{casas}f}" if valor is not None else "—"
+
+            inclinada = (
+                pitch is not None
+                and yaw is not None
+                and (abs(pitch) > LIMITE_PITCH or abs(yaw) > LIMITE_YAW)
+            )
+
+            valores = [
+                (
+                    formatar(ear),
+                    RED if (
+                        ear is not None
+                        and limiar_ear is not None
+                        and ear < limiar_ear
+                    ) else TEXT
+                ),
+                (
+                    formatar(mar),
+                    YELLOW if (
+                        mar is not None
+                        and limiar_mar is not None
+                        and mar > limiar_mar
+                    ) else TEXT
+                ),
+                (
+                    f"{pitch:+.0f}° / {yaw:+.0f}°"
+                    if pitch is not None and yaw is not None else "—",
+                    YELLOW if inclinada else TEXT
+                )
+            ]
+
+            detalhe = (
+                f"fecha abaixo de {limiar_ear:.3f}"
+                if limiar_ear is not None else "Calibrando..."
+            )
+
         else:
-            valores, detalhe = [("—", TEXT)] * 3, ""
-        nomes = ("OLHOS (EAR)", "BOCA (MAR)", "CABEÇA (cima-baixo / lados)")
+            valores = [("—", TEXT)] * 3
+            detalhe = ""
+
+        nomes = (
+            "OLHOS (EAR)",
+            "BOCA (MAR)",
+            "CABEÇA (cima-baixo / lados)"
+        )
+
         linhas = ""
+
         for i, (nome, (valor, cor)) in enumerate(zip(nomes, valores)):
-            extra = f'<br><span style="color:{MUTED}; font-size:12px">{detalhe}</span>' if i == 0 and detalhe else ""
-            linhas += (f'<tr><td style="padding:7px 0"><span style="color:{MUTED}; font-size:13px; '
-                       f'font-weight:700">{nome}</span>{extra}</td><td align="right" style="padding:7px 0">'
-                       f'<span style="color:{cor}; font-size:26px; font-weight:800">{valor}</span></td></tr>')
-        self.medidas.setText(f'<table width="100%" cellspacing="0">{linhas}</table>')
+            extra = (
+                f'<br><span style="color:{MUTED}; font-size:12px">'
+                f'{detalhe}</span>'
+                if i == 0 and detalhe else ""
+            )
+
+            linhas += (
+                f'<tr>'
+                f'<td style="padding:7px 0">'
+                f'<span style="color:{MUTED}; font-size:13px; font-weight:700">'
+                f'{nome}</span>{extra}'
+                f'</td>'
+                f'<td align="right" style="padding:7px 0">'
+                f'<span style="color:{cor}; font-size:26px; font-weight:800">'
+                f'{valor}</span>'
+                f'</td>'
+                f'</tr>'
+            )
+
+        self.medidas.setText(
+            f'<table width="100%" cellspacing="0">{linhas}</table>'
+        )
+
 
     def registrar_evento(self, texto, tipo="info"):
         cor = {"alerta": RED, "atencao": YELLOW}.get(tipo, GREEN)
@@ -267,7 +334,7 @@ class Interface(QWidget):
 
     # ------------------------------------------------------------- estados
     def set_estado(self, chave):
-        if chave == self.estado and chave != "CALIBRANDO":
+        if chave == self.estado:
             return
         anterior, self.estado = self.estado, chave
         self._inicio_calibracao = time.monotonic() if chave == "CALIBRANDO" else None
@@ -289,33 +356,31 @@ class Interface(QWidget):
 
     def recalibrar(self):
         self.timer_demo.stop()
+        if self.thread is not None and self.thread.isRunning():
+            self.thread.solicitar_recalibracao()
+        self.estado = None
         self.set_estado("CALIBRANDO")
+
 
     def _tick(self):
         dados = ESTADOS[self.estado]
         motivo = dados["motivo"]
-        if self.estado == "CALIBRANDO":
-            decorrido = time.monotonic() - self._inicio_calibracao
-            if decorrido >= TEMPO_CALIBRACAO:
-                self.set_estado("ATENTO")
-                if DEMO_AUTOMATICA:
-                    self._indice_demo = 1
-                    self.timer_demo.start(INTERVALO_DEMO)
-                return
-            motivo = f"Olhe para a frente por alguns segundos ({decorrido:.1f}/{TEMPO_CALIBRACAO:.0f} s)"
 
-        self._definir_status(dados["texto"], motivo, dados["cor"])
-        if dados["ear"] is None:
-            self._atualizar_medidas(None)
-        else:
-            self._atualizar_medidas({
-                "ear": max(0.02, dados["ear"] + random.uniform(-0.01, 0.01)),
-                "mar": max(0.0, dados["mar"] + random.uniform(-0.01, 0.01)),
-                "pitch": dados["pitch"] + random.uniform(-2, 2),
-                "yaw": dados["yaw"] + random.uniform(-2, 2),
-            })
-        if self.estado == "FADIGA":  
+        if MODO_TESTE:
+            motivo = "[MODO TESTE] " + motivo
+
+        if self.estado == "CALIBRANDO":
+            motivo = "Olhe para a frente e mantenha a boca relaxada."
+
+        self._definir_status(
+            dados["texto"],
+            motivo,
+            dados["cor"]
+        )
+
+        if self.estado == "FADIGA":
             self.emitir_som("fadiga")
+
 
     def _proximo_estado_demo(self):
         self.set_estado(CICLO_DEMO[self._indice_demo % len(CICLO_DEMO)])
@@ -323,10 +388,33 @@ class Interface(QWidget):
 
     # -------------------------------------------------------------- câmera
     def _iniciar_camera(self):
-        self.thread = CameraThread()
+        self.thread = MonitoramentoThread()
+
         self.thread.frame_pronto.connect(self._mostrar_frame)
+        self.thread.resultado_pronto.connect(self._receber_resultado)
         self.thread.sem_camera.connect(self._sem_camera)
+
         self.thread.start()
+
+    def _receber_resultado(self, info):
+        if MODO_TESTE:
+            return
+        print(
+            f"Estado: {info['estado']} | "
+            f"EAR: {info.get('ear')} | "
+            f"MAR: {info.get('mar')} | "
+            f"Pitch: {info.get('pitch')} | "
+            f"Yaw: {info.get('yaw')}",
+            flush=True
+        )
+
+        estado = info["estado"]
+        self.set_estado(estado)
+
+        if estado == "SEM_ROSTO":
+            self._atualizar_medidas(None)
+        else:
+            self._atualizar_medidas(info)
 
     def _sem_camera(self):
         self.video.setText("Sem câmera\n(a demonstração continua funcionando)")
@@ -379,8 +467,20 @@ class Interface(QWidget):
 
     # --------------------------------------------------------------- janela
     def keyPressEvent(self, evento):
+        global MODO_TESTE
         tecla = evento.key()
-        if tecla in ATALHOS:
+        if tecla == Qt.Key_F9:
+            MODO_TESTE = not MODO_TESTE
+            if MODO_TESTE:
+                self.registrar_evento(
+                    "MODO TESTE ATIVADO — estados simulados.",
+                    "atencao"
+                )
+                self.set_estado("ATENTO")
+            else:
+                self.registrar_evento("Modo teste desativado.")
+                self.recalibrar()
+        elif MODO_TESTE and tecla in ATALHOS:
             self.set_estado(ATALHOS[tecla])
         elif tecla == Qt.Key_R:
             self.recalibrar()
@@ -390,6 +490,7 @@ class Interface(QWidget):
             self.showNormal()
         else:
             super().keyPressEvent(evento)
+
 
     def closeEvent(self, evento):
         self.timer.stop()
