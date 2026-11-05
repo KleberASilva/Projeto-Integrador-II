@@ -1,115 +1,185 @@
-# Detector de Fadiga Automotivo Baseado em Visão Computacional Embarcada e IoT
+# Detector de Fadiga Automotivo Baseado em Visão Computacional
 
 Repositório destinado ao desenvolvimento do projeto da disciplina de **Projeto Integrador II**, do curso de **Engenharia de Computação da Universidade Federal de Santa Maria (UFSM)**.
 
-O projeto propõe o desenvolvimento de um **protótipo embarcado, funcional e de baixo custo**, para monitoramento de motoristas, utilizando **visão computacional (Edge Computing)** e, experimentalmente, **sensores fisiológicos**, para identificar sinais de fadiga, sonolência e distração ao volante.
+O projeto consiste no desenvolvimento de um protótipo de monitoramento de sinais comportamentais associados à fadiga ao volante, utilizando visão computacional para análise facial em tempo real.
 
 ---
 
-### Equipe
+## Equipe
 
-* **Kléberson do Amaral da Silva** — [GitHub](https://github.com/KleberASilva/)
-* **Pedro Lucca Menezes Vitalis** — [GitHub](https://github.com/pedrovitalis)
-* **Vitor Carvalho de Araujo** — [GitHub](https://github.com/arauvitor)
-* **Yuri Silveira Pereira** — [GitHub](https://github.com/slaycker13)
+- **Kléberson do Amaral da Silva** — [GitHub](https://github.com/KleberASilva/)
+- **Pedro Lucca Menezes Vitalis** — [GitHub](https://github.com/pedrovitalis)
+- **Vitor Carvalho de Araujo** — [GitHub](https://github.com/arauvitor)
+- **Yuri Silveira Pereira** — [GitHub](https://github.com/slaycker13)
 
 **Orientador:** Prof. Lucas Feksa Ramos
 
 ---
 
-### Sobre o Projeto
+## Sobre o Projeto
 
-A fadiga ao volante é uma das principais causas de acidentes de trânsito, respondendo por uma parcela significativa dos sinistros no país. Grande parte das soluções comerciais de detecção de fadiga exige hardware proprietário de alto custo ou depende do envio contínuo de imagens do motorista para processamento em nuvem, o que gera custos de conectividade e levanta questões de privacidade.
+A fadiga ao volante representa um importante fator de risco para a segurança no trânsito. Alterações no comportamento do motorista, como fechamento prolongado dos olhos, bocejos frequentes e mudanças na orientação da cabeça, podem indicar condições de sonolência e redução do estado de alerta.
 
-Este projeto propõe uma alternativa: um dispositivo embarcado que realiza **todo o processamento localmente (Edge Computing)**, sem transmitir imagens para fora do veículo, utilizando uma **câmera modular conectada a um microcontrolador da família ESP**.
+O projeto propõe o desenvolvimento de um sistema capaz de monitorar esses sinais por meio de uma câmera, utilizando técnicas de visão computacional e processamento de landmarks faciais.
 
-A partir da imagem capturada, o sistema extrai landmarks faciais e calcula três indicadores principais:
+O processamento é realizado localmente, sem necessidade de transmissão das imagens para servidores externos.
 
-* **EAR (Eye Aspect Ratio)** — abertura/fechamento dos olhos, usado para detectar micro-sonos e fechamento prolongado das pálpebras;
-* **MAR (Mouth Aspect Ratio)** — identificação de bocejos;
-* **Head Pose Estimation** — orientação e inclinação da cabeça, usada para detectar relaxamento cervical ("cabeceadas").
+### Indicadores Monitorados
 
-Para viabilizar o processamento em hardware modesto e evitar sobreaquecimento, a captura de vídeo utiliza **baixo framerate (subamostragem temporal)**, o que também ajuda a filtrar piscadas normais e focar em anomalias prolongadas.
+O sistema utiliza três indicadores principais:
 
-O sistema também prevê a possibilidade de integração experimental de **sensores fisiológicos de contato no volante** (ex.: ECG via divisor de tensão), como validação complementar, dependendo do avanço do cronograma.
+- **EAR (Eye Aspect Ratio):** relação geométrica utilizada para estimar a abertura dos olhos e identificar períodos de fechamento prolongado.
+- **MAR (Mouth Aspect Ratio):** relação geométrica utilizada para identificar abertura prolongada da boca e detectar possíveis bocejos.
+- **Head Pose Estimation:** estimativa da orientação da cabeça nos eixos de rotação, permitindo identificar inclinações e movimentos potencialmente associados à desatenção.
 
-Quando um limiar de fadiga é ultrapassado, o dispositivo aciona um **alarme local (buzzer/LEDs)** e envia via **Wi-Fi** apenas dados textuais mínimos (timestamp + classificação do evento) para fins de **telemetria e posterior validação do algoritmo**, sem transmitir imagens.
+Os indicadores são utilizados em conjunto com mecanismos de calibração e filtragem temporal, buscando adaptar as referências às características individuais e reduzir detecções ocasionadas por movimentos momentâneos.
 
----
+### Interface e Monitoramento
 
-### Áreas de Exploração
+O sistema conta com uma interface gráfica desenvolvida em PySide6, que permite acompanhar o monitoramento em tempo real.
 
-#### Visão Computacional
-Processamento das imagens da câmera para identificação do rosto, olhos, boca e orientação da cabeça do motorista.
+Entre os recursos disponíveis estão:
 
-#### Inteligência Artificial
-Exploração de técnicas de reconhecimento e classificação de padrões relacionados à fadiga e distração.
-
-#### Sistemas Embarcados
-Desenvolvimento da unidade embarcada utilizando microcontroladores da família ESP e integração com sensores e dispositivos de captura.
-
-#### Internet das Coisas (IoT)
-Comunicação entre o dispositivo embarcado, servidor e sistemas de monitoramento, restrita ao envio de dados de telemetria.
-
-#### Processamento de Sinais
-Aquisição e análise experimental de sinais fisiológicos obtidos por sensores de contato no volante.
-
-#### Monitoramento e Análise de Dados
-Armazenamento, processamento e visualização dos dados coletados durante os testes, incluindo o cruzamento entre eventos registrados e gravações de validação (ground truth).
+- Exibição da imagem capturada pela câmera.
+- Apresentação dos indicadores EAR, MAR e orientação da cabeça.
+- Identificação de estados de atenção e possíveis sinais de fadiga.
+- Alertas sonoros associados aos eventos detectados.
+- Registro de eventos durante a execução.
+- Recalibração dos indicadores.
+- Modo de teste para simulação dos estados da interface.
 
 ---
 
-### Tecnologias e Ferramentas
+## Tecnologias Utilizadas
 
-#### Desenvolvimento
-* **Python** — desenvolvimento dos algoritmos;
-* **OpenCV** — processamento de imagens;
-* **MediaPipe / Dlib ou equivalente** — extração de landmarks e geometria facial;
-* **VS Code ou outros** — ambiente de desenvolvimento.
+### Linguagem e Processamento
 
-#### Hardware e Sistemas Embarcados
-* **ESP32/ESP8266** — plataforma embarcada (ajustar escolha ainda);
-* **Câmera modular** — captura das imagens do motorista;
-* **Sensores de contato** — aquisição experimental de sinais fisiológicos;
-* **LEDs, buzzer e outros atuadores** — geração de alertas locais;
-* **ElegantOTA** — atualização remota do firmware.
+- **Python:** linguagem principal do projeto.
+- **OpenCV:** captura e processamento de imagens.
+- **MediaPipe Tasks:** identificação de landmarks faciais.
+- **NumPy:** operações matemáticas e processamento de dados.
 
-#### IoT e Infraestrutura
-* **Ubuntu Server** — servidor para hospedagem dos serviços;
-* **Node-RED** — integração, automação e comunicação entre os componentes;
-* **InfluxDB** — armazenamento de séries temporais (telemetria);
-* **Grafana** — dashboards e visualização dos dados;
-* **ZeroTier** — comunicação remota e rede virtual.
+### Interface e Alertas
 
-#### Desenvolvimento e Prototipagem
-* **Git** — controle de versão;
-* **GitHub** — hospedagem e colaboração no código;
-* **Tinkercad** — prototipagem e simulação de circuitos eletrônicos.
+- **PySide6:** desenvolvimento da interface gráfica.
+- **Winsound:** reprodução de alertas sonoros no Windows.
+
+### Desenvolvimento e Controle de Versão
+
+- **Git:** controle de versão.
+- **GitHub:** hospedagem do repositório e colaboração entre integrantes.
+- **Visual Studio Code:** ambiente de desenvolvimento.
 
 ---
 
-### Estrutura do Repositório
+## Estrutura do Repositório
 
-
-### Como Clonar
+```text
+Projeto-Integrador-II/
+│
+├── src/
+│   ├── main.py
+│   ├── monitoramento.py
+│   ├── interface.py
+│   ├── eye_detection.py
+│   ├── boca.py
+│   ├── head_pose.py
+│   │
+│   ├── models/
+│   │   └── face_landmarker.task
+│   │
+│   ├── data/
+│   │   └── telemetry/
+│   │       └── .gitkeep
+│   │
+│   └── sons/
+│       ├── atencao.wav
+│       └── fadiga.wav
+│
+├── .gitignore
+├── LICENSE
+└── README.md
+```
 
 ---
 
-### Status do Projeto
+## Instalação e Execução
 
-**Em desenvolvimento**
+### 1. Clonar o repositório
+
+```bash
+git clone https://github.com/KleberASilva/Projeto-Integrador-II.git
+
+cd Projeto-Integrador-II
+```
+
+### 2. Criar ambiente virtual
+
+```bash
+python -m venv .venv
+```
+
+Ativação no Windows:
+
+```powershell
+.venv\Scripts\Activate.ps1
+```
+
+### 3. Instalar dependências
+
+```bash
+pip install opencv-python mediapipe numpy PySide6
+```
+
+### 4. Executar o sistema
+
+```bash
+python src/main.py
+```
+
+É necessário disponibilizar uma webcam para a captura das imagens e o modelo `face_landmarker.task` no diretório `src/models/`.
 
 ---
 
-### Disciplina
+## Modo de Teste
 
-**Projeto Integrador II**
-**Curso:** Engenharia de Computação
-**Instituição:** Universidade Federal de Santa Maria — UFSM
+A interface disponibiliza um modo de teste para demonstração dos estados do sistema, permitindo simular situações sem depender da ocorrência de um evento real diante da câmera.
+
+| Tecla | Função |
+|---|---|
+| F9 | Ativar/desativar modo de teste |
+| 1 | Atento |
+| 2 | Bocejo |
+| 3 | Inclinação da cabeça |
+| 4 | Possível fadiga |
+| 5 | Rosto não detectado |
+| R | Recalibrar |
+| F11 | Alternar tela cheia |
+
+Os estados simulados não representam resultados reais dos algoritmos de detecção.
+
+---
+
+## Status do Projeto
+
+**Em desenvolvimento.**
+
+O protótipo possui monitoramento facial em tempo real, interface gráfica e integração dos módulos de detecção de olhos, boca e orientação da cabeça.
+
+As próximas etapas envolvem aprimoramento dos critérios de detecção, avaliação conjunta dos indicadores e validação experimental do sistema.
+
+---
+
+## Disciplina
+
+**Projeto Integrador II**  
+**Curso:** Engenharia de Computação  
+**Instituição:** Universidade Federal de Santa Maria (UFSM)  
 **Orientador:** Prof. Lucas Feksa Ramos
 
 ---
 
-### Licença
+## Licença
 
-Definir licença do repositório (ex.: MIT, GPL-3.0) — ver seção de configuração recomendada abaixo.
+Consulte o arquivo [LICENSE](LICENSE) para informações sobre os termos de utilização e distribuição do projeto.
