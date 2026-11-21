@@ -215,6 +215,11 @@ eventos sem alterar a classificação automática:
 
 ## Capturas de diagnóstico
 
+O monitoramento da câmera pode permanecer ativo sem gravar arquivos. O botão
+**Iniciar coleta** cria uma nova sessão; **Parar coleta** fecha a sessão e
+interrompe a gravação de frames e capturas. Fechar a janela também encerra
+uma coleta ativa.
+
 Cada sessão possui uma pasta `capturas/` dentro do diretório da sessão. A tecla
 `C` ou o botão **Capturar (C)** solicita uma imagem no próximo frame processado.
 A linha correspondente em `telemetria.csv` registra o caminho da captura,

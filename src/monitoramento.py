@@ -26,6 +26,7 @@ class MonitoramentoThread(QThread):
     resultado_pronto = Signal(object)
     sem_camera = Signal()
     captura_pronta = Signal(str)
+    coleta_alterada = Signal(bool)
 
     def __init__(self):
         super().__init__()
@@ -35,6 +36,9 @@ class MonitoramentoThread(QThread):
         self._frame_atual = 0
         self._marcacoes_pendentes = []
         self._captura_solicitada = False
+        self._coleta_ativa = False
+        self._solicitar_inicio_coleta = False
+        self._solicitar_fim_coleta = False
 
     def parar(self):
         self._executando = False
@@ -43,9 +47,37 @@ class MonitoramentoThread(QThread):
     def solicitar_recalibracao(self):
         self._recalibrar = True
 
+    def iniciar_coleta(self):
+        self._solicitar_inicio_coleta = True
+        self._solicitar_fim_coleta = False
+
+    def parar_coleta(self):
+        self._solicitar_fim_coleta = True
+        self._solicitar_inicio_coleta = False
+        self._captura_solicitada = False
+
+    def _atualizar_coleta(self):
+        if self._solicitar_fim_coleta:
+            self._solicitar_fim_coleta = False
+            if self.telemetria is not None:
+                self.telemetria.fechar()
+                self.telemetria = None
+            if self._coleta_ativa:
+                self._coleta_ativa = False
+                self.coleta_alterada.emit(False)
+
+        if self._solicitar_inicio_coleta and not self._coleta_ativa:
+            self._solicitar_inicio_coleta = False
+            self.telemetria = Telemetria()
+            self._coleta_ativa = True
+            self.coleta_alterada.emit(True)
+
     def solicitar_captura(self):
         """Solicita uma captura no prÃ³ximo frame processado."""
+        if not self._coleta_ativa:
+            return False
         self._captura_solicitada = True
+        return True
 
     def _adicionar_diagnostico(self, dados):
         parametros = self.classificador.parametros
@@ -72,6 +104,8 @@ class MonitoramentoThread(QThread):
         return dados
 
     def _registrar_frame(self, dados, frame, numero_frame, agora):
+        if not self._coleta_ativa or self.telemetria is None:
+            return
         captura = self._captura_solicitada
         self._captura_solicitada = False
         caminho = self.telemetria.registrar(
@@ -86,8 +120,7 @@ class MonitoramentoThread(QThread):
     def registrar_marcacao(self, tipo, descricao):
         """Registra uma marcação manual na sessão sem alterar o classificador."""
         telemetria = self.telemetria
-        if telemetria is None:
-            self._marcacoes_pendentes.append((tipo, descricao))
+        if not self._coleta_ativa or telemetria is None:
             return False
         return telemetria.registrar_marcacao(
             tipo,
@@ -113,12 +146,8 @@ class MonitoramentoThread(QThread):
             camera.release()
             return
 
-        self.telemetria = Telemetria()
         numero_frame = 0
         self._frame_atual = 0
-        for tipo, descricao in self._marcacoes_pendentes:
-            self.telemetria.registrar_marcacao(tipo, descricao)
-        self._marcacoes_pendentes.clear()
 
         try:
             options = mp.tasks.vision.FaceLandmarkerOptions(
@@ -134,6 +163,8 @@ class MonitoramentoThread(QThread):
             ) as landmarker:
 
                 while self._executando:
+
+                    self._atualizar_coleta()
 
                     if self._recalibrar:
                         self._criar_detectores()
@@ -424,4 +455,9 @@ class MonitoramentoThread(QThread):
 
         finally:
             camera.release()
-            self.telemetria.fechar()
+            if self.telemetria is not None:
+                self.telemetria.fechar()
+                self.telemetria = None
+            if self._coleta_ativa:
+                self._coleta_ativa = False
+                self.coleta_alterada.emit(False)

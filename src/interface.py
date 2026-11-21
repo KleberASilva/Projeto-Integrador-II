@@ -135,6 +135,7 @@ class Interface(QWidget):
         self.setMinimumSize(900, 560)
         self.estado = "CALIBRANDO"
         self.thread = None
+        self.coleta_ativa = False
         self.som_tocando = False
         self.ultimo_alerta = {}
         self._visual_status = None
@@ -214,6 +215,8 @@ class Interface(QWidget):
 
         botoes = QHBoxLayout()
         botoes.setSpacing(10)
+        self.botao_coleta = self._botao("Iniciar coleta", "glassButton", self.alternar_coleta)
+        botoes.addWidget(self.botao_coleta, 1)
         botoes.addWidget(self._botao("Capturar (C)", "glassButton", self.capturar_tela), 1)
         botoes.addWidget(self._botao("Recalibrar", "glassButton", self.recalibrar), 1)
         botoes.addWidget(self._botao("Testar som", "glassButton", self.testar_som), 1)
@@ -407,6 +410,7 @@ class Interface(QWidget):
         self.thread.resultado_pronto.connect(self._receber_resultado)
         self.thread.sem_camera.connect(self._sem_camera)
         self.thread.captura_pronta.connect(self._captura_pronta)
+        self.thread.coleta_alterada.connect(self._coleta_alterada)
 
         self.thread.start()
 
@@ -427,14 +431,31 @@ class Interface(QWidget):
         self.registrar_evento("Nenhuma câmera encontrada. Seguindo sem imagem.", "atencao")
 
     def capturar_tela(self):
-        if self.thread is None or not self.thread.isRunning():
-            self.registrar_evento("Captura indisponivel: monitoramento nao iniciado.", "atencao")
+        if self.thread is None or not self.thread.isRunning() or not self.coleta_ativa:
+            self.registrar_evento("Inicie a coleta antes de salvar uma captura.", "atencao")
             return
         self.thread.solicitar_captura()
         self.registrar_evento("Captura solicitada; sera salva no proximo frame processado.")
 
     def _captura_pronta(self, caminho):
         self.registrar_evento(f"Captura salva: {caminho}")
+
+    def alternar_coleta(self):
+        if self.thread is None or not self.thread.isRunning():
+            self.registrar_evento("Coleta indisponivel: monitoramento nao iniciado.", "atencao")
+            return
+        if self.coleta_ativa:
+            self.thread.parar_coleta()
+        else:
+            self.thread.iniciar_coleta()
+
+    def _coleta_alterada(self, ativa):
+        self.coleta_ativa = ativa
+        self.botao_coleta.setText("Parar coleta" if ativa else "Iniciar coleta")
+        self.registrar_evento(
+            "Coleta iniciada." if ativa else "Coleta parada; arquivos fechados.",
+            "atencao" if not ativa else "info",
+        )
 
     def _mostrar_frame(self, frame):
         rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
@@ -482,9 +503,17 @@ class Interface(QWidget):
         self.registrar_evento("Teste do alerta de fadiga.")
 
     def registrar_marcacao_manual(self, tipo, descricao):
-        if self.thread is not None:
-            self.thread.registrar_marcacao(tipo, descricao)
-        self.registrar_evento(f"Marcação manual: {descricao}")
+        registrada = (
+            self.thread is not None
+            and self.thread.registrar_marcacao(tipo, descricao)
+        )
+        if registrada:
+            self.registrar_evento(f"Marcação manual: {descricao}")
+        else:
+            self.registrar_evento(
+                "Marcação ignorada: inicie a coleta antes de anotar.",
+                "atencao",
+            )
 
     # --------------------------------------------------------------- janela
     def keyPressEvent(self, evento):
@@ -522,6 +551,7 @@ class Interface(QWidget):
         self.timer.stop()
         self.timer_demo.stop()
         if self.thread and self.thread.isRunning():
+            self.thread.parar_coleta()
             self.thread.parar()
         evento.accept()
 
