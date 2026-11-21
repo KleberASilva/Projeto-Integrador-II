@@ -37,6 +37,7 @@ ESTADOS = {
     "CALIBRANDO": dict(texto="CALIBRANDO", cor=BLUE, motivo="", ear=0.28, mar=0.05, pitch=0.0, yaw=0.0),
     "ATENTO": dict(texto="ATENTO", cor=GREEN, motivo="Nenhum sinal persistente detectado",
                    ear=0.28, mar=0.05, pitch=0.0, yaw=0.0),
+    "ATENCAO": dict(texto="ATENÇÃO", cor=YELLOW, motivo="Indicador de sonolência detectado", ear=0.25, mar=0.05, pitch=0.0, yaw=0.0),
     "BOCEJO": dict(texto="ATENÇÃO", cor=YELLOW, motivo="Bocejo prolongado",
                    ear=0.25, mar=0.85, pitch=-4.0, yaw=0.0),
     "CABECA": dict(texto="ATENÇÃO", cor=YELLOW, motivo="Inclinação prolongada da cabeça",
@@ -48,6 +49,17 @@ ESTADOS = {
 }
 CICLO_DEMO = ["ATENTO", "BOCEJO", "CABECA", "FADIGA", "SEM_ROSTO"]
 ATALHOS = {Qt.Key_1: "ATENTO", Qt.Key_2: "BOCEJO", Qt.Key_3: "CABECA", Qt.Key_4: "FADIGA", Qt.Key_5: "SEM_ROSTO"}
+MARCACOES_MANUAIS = {
+    Qt.Key_F1: ("INICIO_TESTE", "Início do teste"),
+    Qt.Key_F2: ("ROTACAO_ESQUERDA", "Rotação da cabeça para a esquerda"),
+    Qt.Key_F3: ("ROTACAO_DIREITA", "Rotação da cabeça para a direita"),
+    Qt.Key_F4: ("INCLINACAO_CIMA", "Inclinação da cabeça para cima"),
+    Qt.Key_F5: ("INCLINACAO_BAIXO", "Inclinação da cabeça para baixo"),
+    Qt.Key_F6: ("PISCADA", "Piscadas"),
+    Qt.Key_F7: ("FECHAMENTO_PROLONGADO", "Fechamento prolongado dos olhos"),
+    Qt.Key_F8: ("BOCEJO", "Simulação de bocejo"),
+    Qt.Key_End: ("FIM_TESTE", "Fim do teste"),
+}
 
 
 class CameraThread(QThread):
@@ -202,6 +214,7 @@ class Interface(QWidget):
 
         botoes = QHBoxLayout()
         botoes.setSpacing(10)
+        botoes.addWidget(self._botao("Capturar (C)", "glassButton", self.capturar_tela), 1)
         botoes.addWidget(self._botao("Recalibrar", "glassButton", self.recalibrar), 1)
         botoes.addWidget(self._botao("Testar som", "glassButton", self.testar_som), 1)
         coluna.addLayout(botoes)
@@ -393,20 +406,13 @@ class Interface(QWidget):
         self.thread.frame_pronto.connect(self._mostrar_frame)
         self.thread.resultado_pronto.connect(self._receber_resultado)
         self.thread.sem_camera.connect(self._sem_camera)
+        self.thread.captura_pronta.connect(self._captura_pronta)
 
         self.thread.start()
 
     def _receber_resultado(self, info):
         if MODO_TESTE:
             return
-        print(
-            f"Estado: {info['estado']} | "
-            f"EAR: {info.get('ear')} | "
-            f"MAR: {info.get('mar')} | "
-            f"Pitch: {info.get('pitch')} | "
-            f"Yaw: {info.get('yaw')}",
-            flush=True
-        )
 
         estado = info["estado"]
         self.set_estado(estado)
@@ -419,6 +425,16 @@ class Interface(QWidget):
     def _sem_camera(self):
         self.video.setText("Sem câmera\n(a demonstração continua funcionando)")
         self.registrar_evento("Nenhuma câmera encontrada. Seguindo sem imagem.", "atencao")
+
+    def capturar_tela(self):
+        if self.thread is None or not self.thread.isRunning():
+            self.registrar_evento("Captura indisponivel: monitoramento nao iniciado.", "atencao")
+            return
+        self.thread.solicitar_captura()
+        self.registrar_evento("Captura solicitada; sera salva no proximo frame processado.")
+
+    def _captura_pronta(self, caminho):
+        self.registrar_evento(f"Captura salva: {caminho}")
 
     def _mostrar_frame(self, frame):
         rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
@@ -465,6 +481,11 @@ class Interface(QWidget):
         self.emitir_som("fadiga")
         self.registrar_evento("Teste do alerta de fadiga.")
 
+    def registrar_marcacao_manual(self, tipo, descricao):
+        if self.thread is not None:
+            self.thread.registrar_marcacao(tipo, descricao)
+        self.registrar_evento(f"Marcação manual: {descricao}")
+
     # --------------------------------------------------------------- janela
     def keyPressEvent(self, evento):
         global MODO_TESTE
@@ -480,10 +501,15 @@ class Interface(QWidget):
             else:
                 self.registrar_evento("Modo teste desativado.")
                 self.recalibrar()
+        elif tecla in MARCACOES_MANUAIS:
+            tipo, descricao = MARCACOES_MANUAIS[tecla]
+            self.registrar_marcacao_manual(tipo, descricao)
         elif MODO_TESTE and tecla in ATALHOS:
             self.set_estado(ATALHOS[tecla])
         elif tecla == Qt.Key_R:
             self.recalibrar()
+        elif tecla == Qt.Key_C:
+            self.capturar_tela()
         elif tecla == Qt.Key_F11:
             self.showNormal() if self.isFullScreen() else self.showFullScreen()
         elif tecla == Qt.Key_Escape and self.isFullScreen():

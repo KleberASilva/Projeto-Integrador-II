@@ -183,3 +183,65 @@ As próximas etapas envolvem aprimoramento dos critérios de detecção, avalia�
 ## Licença
 
 Consulte o arquivo [LICENSE](LICENSE) para informações sobre os termos de utilização e distribuição do projeto.
+
+## Telemetria por sessão
+
+Cada execução cria um identificador próprio e dois arquivos em
+`src/data/telemetry/`:
+
+- `<session_id>/telemetria.csv`: uma linha por frame, com timestamp ISO 8601,
+  tempo monotônico desde o início, número do frame, estado, indicadores,
+  calibração, PERCLOS e orientação original, filtrada e relativa.
+- `<session_id>_eventos.csv`: eventos deduplicados com origem, tipo, início,
+  fim, duração, confirmação, motivo de interrupção e frames associados.
+
+Os arquivos existentes não são sobrescritos. Os CSVs gerados são ignorados
+por [`.gitignore`](.gitignore) para não entrarem no repositório.
+
+## Marcações manuais
+
+Durante uma sessão, as teclas abaixo registram uma marcação no arquivo de
+eventos sem alterar a classificação automática:
+
+| Tecla | Marcação |
+|---|---|
+| F1 | Início do teste |
+| F2 / F3 | Rotação para esquerda / direita |
+| F4 / F5 | Inclinação para cima / baixo |
+| F6 | Piscadas |
+| F7 | Fechamento prolongado |
+| F8 | Simulação de bocejo |
+| End | Fim do teste |
+
+## Capturas de diagnóstico
+
+Cada sessão possui uma pasta `capturas/` dentro do diretório da sessão. A tecla
+`C` ou o botão **Capturar (C)** solicita uma imagem no próximo frame processado.
+A linha correspondente em `telemetria.csv` registra o caminho da captura,
+mantendo o mesmo `session_id`, timestamp e número do frame.
+
+## Testes automatizados
+
+Execute a suíte determinística com o Python do ambiente virtual:
+
+```powershell
+.venv\Scripts\python.exe -m unittest discover -s tests -p "test_*.py" -v
+```
+
+Os testes cobrem cálculo temporal de eventos, calibração sintética dos
+detectores, interrupção por ausência de rosto, simetria sintética do yaw,
+transições do classificador e persistência dos CSVs. Eles não substituem
+testes com webcam.
+
+## Limitações e validação experimental
+
+Os parâmetros de calibração, duração mínima, frequência, cobertura do
+PERCLOS, persistência de estados e quantidade mínima de evidências são
+configuráveis no código e representam parâmetros de protótipo. Eles não são
+limiares clínicos ou uma validação científica de fadiga.
+
+Antes de interpretar o estado `FADIGA`, ainda é necessário realizar testes
+com webcam, iluminação e posições variadas, comparando as marcações manuais
+com os eventos dos CSVs. Também é necessário avaliar falsos positivos,
+falsos negativos, perda de rosto, variação de taxa de quadros e assimetria
+residual da orientação da cabeça.

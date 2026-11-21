@@ -219,3 +219,5 @@ __marimo__/
 
 # Dados de telemetria gerados durante a execução
 src/data/telemetry/*.csv
+src/data/telemetry/**/*.csv
+src/data/telemetry/**/*.png
