@@ -39,6 +39,7 @@ class MonitoramentoThread(QThread):
         self._coleta_ativa = False
         self._solicitar_inicio_coleta = False
         self._solicitar_fim_coleta = False
+        self._sinais_automaticos_ativos = {}
 
     def parar(self):
         self._executando = False
@@ -70,6 +71,7 @@ class MonitoramentoThread(QThread):
             self._solicitar_inicio_coleta = False
             self.telemetria = Telemetria()
             self._coleta_ativa = True
+            self._sinais_automaticos_ativos = {}
             self.coleta_alterada.emit(True)
 
     def solicitar_captura(self):
@@ -103,16 +105,43 @@ class MonitoramentoThread(QThread):
         })
         return dados
 
+    def _captura_automatica(self, dados):
+        sinais = {
+            "fechamento_prolongado": (
+                dados.get("estado_olhos") == "FECHADOS"
+                and (dados.get("tempo_olho_fechado") or 0.0)
+                >= self.olhos.tempo_minimo_fechamento
+            ),
+            "abertura_prolongada": (
+                dados.get("estado_boca") == "ABERTA"
+                and (dados.get("tempo_abertura") or 0.0)
+                >= self.boca.tempo_minimo_bocejo
+            ),
+            "movimento_cabeca": dados.get("estado_cabeca") == "MOVIMENTO",
+            "entrada_atencao": dados.get("estado") == "ATENCAO",
+            "entrada_fadiga": dados.get("estado") == "FADIGA",
+        }
+        novos = [
+            nome for nome, ativo in sinais.items()
+            if ativo and not self._sinais_automaticos_ativos.get(nome, False)
+        ]
+        self._sinais_automaticos_ativos = sinais
+        return bool(novos), ",".join(novos)
+
     def _registrar_frame(self, dados, frame, numero_frame, agora):
         if not self._coleta_ativa or self.telemetria is None:
             return
-        captura = self._captura_solicitada
+        captura_automatica, motivo = self._captura_automatica(dados)
+        captura_manual = self._captura_solicitada
+        captura = captura_automatica or captura_manual
         self._captura_solicitada = False
         caminho = self.telemetria.registrar(
             dados,
             frame=numero_frame,
             agora=agora,
             imagem=frame.copy() if captura else None,
+            captura_tipo=("manual" if captura_manual else "automatica") if captura else None,
+            captura_motivo=("solicitacao_manual" if captura_manual else motivo) if captura else None,
         )
         if caminho:
             self.captura_pronta.emit(caminho)

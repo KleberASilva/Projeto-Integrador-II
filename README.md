@@ -220,6 +220,12 @@ O monitoramento da câmera pode permanecer ativo sem gravar arquivos. O botão
 interrompe a gravação de frames e capturas. Fechar a janela também encerra
 uma coleta ativa.
 
+Durante uma coleta, as capturas automáticas acontecem somente quando um sinal
+entra em condição de alerta: fechamento prolongado dos olhos, abertura
+prolongada da boca, movimento confirmado da cabeça, entrada em `ATENCAO` ou
+entrada em `FADIGA`. O botão **Capturar (C)** salva uma captura manual
+independente, com nome iniciado por `manual_`, mesmo fora de uma coleta.
+
 Cada sessão possui uma pasta `capturas/` dentro do diretório da sessão. A tecla
 `C` ou o botão **Capturar (C)** solicita uma imagem no próximo frame processado.
 A linha correspondente em `telemetria.csv` registra o caminho da captura,

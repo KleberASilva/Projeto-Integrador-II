@@ -3,6 +3,7 @@ import random
 import sys
 import threading
 import time
+from datetime import datetime
 
 import cv2
 from PySide6.QtCore import Qt, QThread, QTimer, Signal
@@ -23,13 +24,14 @@ MAX_CAMERAS = 6
 MODO_TESTE = False
 
 TELA_CHEIA = False           
-CORTAR_PARA_PREENCHER = True
+CORTAR_PARA_PREENCHER = False
 PAINEL_LARGURA, MARGEM = 380, 24
 VIDRO = "rgba(11, 18, 32, 165)" 
 VIDRO_LOG = "rgba(8, 15, 27, 150)"
 
 PASTA = os.path.dirname(os.path.abspath(__file__))
 SONS = {t: os.path.join(PASTA, "sons", f"{t}.wav") for t in ("fadiga", "atencao")}
+CAPTURAS_MANUAIS = os.path.join(PASTA, "data", "telemetry", "manual_capturas")
 BEEPS = {"fadiga": [(1200, 350)] * 3, "atencao": [(750, 250)]}
 INTERVALO_ALERTA = {"fadiga": 4, "atencao": 6} 
 
@@ -431,11 +433,13 @@ class Interface(QWidget):
         self.registrar_evento("Nenhuma câmera encontrada. Seguindo sem imagem.", "atencao")
 
     def capturar_tela(self):
-        if self.thread is None or not self.thread.isRunning() or not self.coleta_ativa:
-            self.registrar_evento("Inicie a coleta antes de salvar uma captura.", "atencao")
-            return
-        self.thread.solicitar_captura()
-        self.registrar_evento("Captura solicitada; sera salva no proximo frame processado.")
+        os.makedirs(CAPTURAS_MANUAIS, exist_ok=True)
+        timestamp = datetime.now().astimezone().strftime("%Y%m%d_%H%M%S_%f")
+        caminho = os.path.join(CAPTURAS_MANUAIS, f"manual_{timestamp}.png")
+        if self.grab().save(caminho, "PNG"):
+            self.registrar_evento(f"Captura manual salva: {caminho}")
+        else:
+            self.registrar_evento("Nao foi possivel salvar a captura manual.", "atencao")
 
     def _captura_pronta(self, caminho):
         self.registrar_evento(f"Captura salva: {caminho}")

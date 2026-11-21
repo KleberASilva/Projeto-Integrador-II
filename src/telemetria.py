@@ -73,7 +73,8 @@ class Telemetria:
             "persistencia_fadiga_decorrida", "persistencia_fadiga_necessaria",
             "persistencia_transicao_decorrida",
             "persistencia_transicao_necessaria", "candidato_transicao",
-            "captura_arquivo", "captura_timestamp",
+            "captura_arquivo", "captura_timestamp", "captura_tipo",
+            "captura_motivo",
         ]
 
         self.colunas_eventos = [
@@ -197,10 +198,10 @@ class Telemetria:
             return f"{valor:.3f}"
         return str(valor)
 
-    def _salvar_captura(self, imagem, info, frame, momento):
+    def _salvar_captura(self, imagem, info, frame, momento, captura_tipo="automatica"):
         timestamp = self._iso_timestamp(momento)
         nome_timestamp = timestamp.replace("-", "").replace(":", "").replace("+", "_").replace(".", "")
-        nome = f"frame_{int(frame or 0):06d}_{nome_timestamp}.png"
+        nome = f"{captura_tipo}_frame_{int(frame or 0):06d}_{nome_timestamp}.png"
         caminho = os.path.join(self.pasta_capturas, nome)
 
         linhas = [
@@ -234,7 +235,15 @@ class Telemetria:
         caminho_relativo = os.path.relpath(caminho, self.pasta_sessao)
         return caminho_relativo.replace(os.sep, "/"), timestamp
 
-    def registrar(self, info, frame=None, agora=None, imagem=None):
+    def registrar(
+        self,
+        info,
+        frame=None,
+        agora=None,
+        imagem=None,
+        captura_tipo=None,
+        captura_motivo=None,
+    ):
         """Registra uma linha e, opcionalmente, uma captura sincronizada."""
         with self._lock:
             momento = time.monotonic() if agora is None else agora
@@ -242,7 +251,11 @@ class Telemetria:
             captura_timestamp = None
             if imagem is not None:
                 captura_arquivo, captura_timestamp = self._salvar_captura(
-                    imagem, info or {}, frame, momento
+                    imagem,
+                    info or {},
+                    frame,
+                    momento,
+                    captura_tipo or "automatica",
                 )
             linha = {coluna: None for coluna in self.colunas}
             linha.update(info or {})
@@ -256,6 +269,8 @@ class Telemetria:
                     ),
                     "captura_arquivo": captura_arquivo,
                     "captura_timestamp": captura_timestamp,
+                    "captura_tipo": captura_tipo,
+                    "captura_motivo": captura_motivo,
                 }
             )
 
