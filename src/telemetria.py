@@ -67,9 +67,14 @@ class Telemetria:
             "evento_boca", "evento_boca_duracao", "evento_boca_json",
             "evento_cabeca", "evento_cabeca_duracao", "evento_cabeca_json",
             "escore_olhos", "escore_boca", "escore_cabeca", "peso_olhos",
-            "peso_boca", "peso_cabeca", "escore_total",
+            "peso_boca", "peso_cabeca", "limiar_fadiga_individual",
+            "persistencia_fadiga_individual", "escore_total",
             "categorias_significativas", "motivo_classificacao",
-            "sinal_atencao", "sinal_fadiga", "fadiga_persistente",
+            "motivo_alerta", "fadiga_individual", "fadiga_combinada",
+            "modo_fadiga", "fatores_fadiga",
+            "nivel_olhos", "nivel_boca", "nivel_cabeca",
+            "sinal_atencao", "sinal_fadiga", "sinal_fadiga_individual",
+            "sinal_fadiga_combinada", "fadiga_persistente",
             "persistencia_fadiga_decorrida", "persistencia_fadiga_necessaria",
             "persistencia_transicao_decorrida",
             "persistencia_transicao_necessaria", "candidato_transicao",
@@ -216,6 +221,8 @@ class Telemetria:
             f"total: {self._texto(info.get('escore_total'))} categorias: {info.get('categorias_significativas')}",
             f"pesos O/B/C: {self._texto(info.get('peso_olhos'))}/{self._texto(info.get('peso_boca'))}/{self._texto(info.get('peso_cabeca'))}",
             f"motivo: {info.get('motivo_classificacao') or '-'}",
+            f"alerta: {info.get('motivo_alerta') or '-'}",
+            f"modo fadiga: {info.get('modo_fadiga') or '-'} fatores={info.get('fatores_fadiga') or '-'}",
         ]
         altura, largura = imagem.shape[:2]
         painel_largura = 620
@@ -259,6 +266,10 @@ class Telemetria:
                 )
             linha = {coluna: None for coluna in self.colunas}
             linha.update(info or {})
+            if isinstance(linha.get("fatores_fadiga"), (list, tuple)):
+                linha["fatores_fadiga"] = json.dumps(
+                    linha["fatores_fadiga"], ensure_ascii=False
+                )
             linha.update(
                 {
                     "session_id": self.session_id,

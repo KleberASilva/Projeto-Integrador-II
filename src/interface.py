@@ -15,7 +15,7 @@ from monitoramento import MonitoramentoThread
 TEXT, MUTED = "#e7eef9", "#91a4bf"
 GREEN, YELLOW, RED, BLUE = "#39d98a", "#ffca58", "#ff5d6c", "#67a9ff"
 
-LIMIAR_EAR, LIMIAR_MAR, LIMITE_PITCH, LIMITE_YAW = 0.20, 0.70, 25, 30  
+LIMIAR_EAR, LIMIAR_MAR, LIMITE_PITCH, LIMITE_YAW = 0.20, 0.70, 15, 50
 
 DEMO_AUTOMATICA = False   
 INTERVALO_DEMO = 5000    
@@ -136,6 +136,7 @@ class Interface(QWidget):
         self.resize(1280, 800)
         self.setMinimumSize(900, 560)
         self.estado = "CALIBRANDO"
+        self._motivo_dinamico_atual = None
         self.thread = None
         self.coleta_ativa = False
         self.som_tocando = False
@@ -261,6 +262,19 @@ class Interface(QWidget):
         self.status_card.setStyleSheet(
             f"QFrame#statusCard {{ background:{VIDRO}; border:2px solid {cor}; border-radius:12px; }}")
 
+    @staticmethod
+    def _motivo_dinamico(info):
+        modo = info.get("modo_fadiga")
+        fatores = ", ".join(info.get("fatores_fadiga") or [])
+        if modo == "COMBINADA":
+            return f"Possível fadiga pela combinação: {fatores}."
+        if modo == "INDIVIDUAL":
+            return f"Possível fadiga por indicador prolongado: {fatores}."
+        motivo = info.get("motivo_alerta")
+        if motivo and motivo.startswith("ATENCAO:"):
+            return "Atenção: " + motivo.removeprefix("ATENCAO:").replace("+", ", ")
+        return None
+
     def _atualizar_medidas(self, info):
         if info:
             ear = info.get("ear")
@@ -283,7 +297,7 @@ class Interface(QWidget):
             valores = [
                 (
                     formatar(ear),
-                    RED if (
+                    RED if info.get("nivel_olhos") == "FADIGA" else YELLOW if (
                         ear is not None
                         and limiar_ear is not None
                         and ear < limiar_ear
@@ -291,7 +305,7 @@ class Interface(QWidget):
                 ),
                 (
                     formatar(mar),
-                    YELLOW if (
+                    RED if info.get("nivel_boca") == "FADIGA" else YELLOW if (
                         mar is not None
                         and limiar_mar is not None
                         and mar > limiar_mar
@@ -300,7 +314,7 @@ class Interface(QWidget):
                 (
                     f"{pitch:+.0f}° / {yaw:+.0f}°"
                     if pitch is not None and yaw is not None else "—",
-                    YELLOW if inclinada else TEXT
+                    RED if info.get("nivel_cabeca") == "FADIGA" else YELLOW if inclinada else TEXT
                 )
             ]
 
@@ -351,8 +365,10 @@ class Interface(QWidget):
         self.log.append(f'<span style="color:{cor}">[{time.strftime("%H:%M:%S")}] {texto}</span>')
 
     # ------------------------------------------------------------- estados
-    def set_estado(self, chave):
+    def set_estado(self, chave, motivo_override=None):
+        self._motivo_dinamico_atual = motivo_override
         if chave == self.estado:
+            self._tick()
             return
         anterior, self.estado = self.estado, chave
         self._inicio_calibracao = time.monotonic() if chave == "CALIBRANDO" else None
@@ -382,7 +398,7 @@ class Interface(QWidget):
 
     def _tick(self):
         dados = ESTADOS[self.estado]
-        motivo = dados["motivo"]
+        motivo = self._motivo_dinamico_atual or dados["motivo"]
 
         if MODO_TESTE:
             motivo = "[MODO TESTE] " + motivo
@@ -421,7 +437,7 @@ class Interface(QWidget):
             return
 
         estado = info["estado"]
-        self.set_estado(estado)
+        self.set_estado(estado, self._motivo_dinamico(info))
 
         if estado == "SEM_ROSTO":
             self._atualizar_medidas(None)

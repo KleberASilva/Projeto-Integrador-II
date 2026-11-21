@@ -5,6 +5,7 @@ import cv2
 import numpy as np
 
 from src.head_pose import (
+    DetectorCabeca,
     FiltroOrientacao,
     MODELO_ROSTO_3D,
     PONTOS_ROSTO,
@@ -35,6 +36,15 @@ def landmarks_projetados(eixo, graus, largura=640, altura=480):
 
 
 class HeadPoseTests(unittest.TestCase):
+    def test_detector_exige_mais_rotacao_lateral_que_inclinacao(self):
+        detector = DetectorCabeca(tempo_minimo=0.0)
+        movimento, _ = detector.atualizar(40.0, 0.0, 0.0)
+        self.assertFalse(movimento)
+
+        detector = DetectorCabeca(tempo_minimo=0.0)
+        movimento, _ = detector.atualizar(0.0, 16.0, 0.0)
+        self.assertTrue(movimento)
+
     def test_estimativa_preserva_pitch_yaw_e_roll(self):
         for eixo, esperado in ((0, 20.0), (1, 30.0), (2, -25.0)):
             orientacao = estimar_orientacao(
@@ -64,6 +74,15 @@ class HeadPoseTests(unittest.TestCase):
         self.assertAlmostEqual(relativo[0], 0.0)
         self.assertAlmostEqual(relativo[1], 0.0)
         self.assertAlmostEqual(relativo[2], 0.0)
+
+    def test_evento_de_cabeca_confirmado_e_preservado_ao_perder_rosto(self):
+        from src.head_pose import DetectorCabeca
+
+        detector = DetectorCabeca(tempo_minimo=1.0)
+        detector.atualizar(0.0, 20.0, 0.0)
+        detector.interromper(1.1)
+        self.assertIsNotNone(detector.ultimo_evento)
+        self.assertTrue(detector.ultimo_evento["confirmado"])
 
 
 if __name__ == "__main__":

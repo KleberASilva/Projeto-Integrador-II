@@ -25,11 +25,13 @@ class ParametrosClassificador:
     limiar_atencao: float = 0.25
     limiar_saida_atencao: float = 0.15
     limiar_fadiga: float = 0.50
+    limiar_fadiga_individual: float = 0.80
     limiar_saida_fadiga: float = 0.30
     limiar_categoria_significativa: float = 0.35
     persistencia_entrada_atencao: float = 0.5
     persistencia_saida_atencao: float = 1.0
     persistencia_entrada_fadiga: float = 2.0
+    persistencia_fadiga_individual: float = 4.0
     persistencia_saida_fadiga: float = 1.5
     perclos_minimo: float | None = None
     perclos_referencia: float = 0.30
@@ -102,6 +104,11 @@ class ClassificadorFadiga:
         self._candidato = None
         self._inicio_candidato = None
         self._inicio_evidencia_fadiga = None
+        self._inicio_evidencia_individual = {
+            "olhos": None,
+            "boca": None,
+            "cabeca": None,
+        }
         self._ultima_frequencia = {"olhos": 0, "boca": 0, "cabeca": 0}
         self._inicio_frequencia = {"olhos": None, "boca": None, "cabeca": None}
         self.diagnostico = {}
@@ -158,12 +165,46 @@ class ClassificadorFadiga:
         decaimento = max(0.0, 1.0 - idade / janela) if janela > 0 else 0.0
         return _limitar(valor / max(1, minimo)) * decaimento
 
+    def _atualizar_evidencia_individual(self, indicadores, agora):
+        candidatos = {
+            categoria
+            for categoria, score in self.escores.items()
+            if score >= self.parametros.limiar_fadiga_individual
+        }
+        if (
+            "boca" in candidatos
+            and int(indicadores.get("frequencia_bocejos", 0) or 0)
+            < self.parametros.minimo_bocejos
+        ):
+            candidatos.remove("boca")
+        for categoria in self._inicio_evidencia_individual:
+            if categoria in candidatos:
+                if self._inicio_evidencia_individual[categoria] is None:
+                    self._inicio_evidencia_individual[categoria] = agora
+            else:
+                self._inicio_evidencia_individual[categoria] = None
+
+        return [
+            categoria
+            for categoria in candidatos
+            if agora - self._inicio_evidencia_individual[categoria]
+            >= self.parametros.persistencia_fadiga_individual
+        ]
+
     def _calcular_escores(self, indicadores, agora):
         p = self.parametros
         olhos = 0.0
         if indicadores.get("olhos_fechados"):
             olhos = _limitar((indicadores.get("tempo_olho_fechado") or 0.0) / p.tempo_referencia_olhos)
-        boca = 1.0 if indicadores.get("bocejo") else 0.0
+        frequencia_bocejos = int(
+            indicadores.get("frequencia_bocejos", 0) or 0
+        )
+        boca = (
+            1.0
+            if indicadores.get("bocejo")
+            and frequencia_bocejos >= p.minimo_bocejos
+            else 0.0
+        )
         if indicadores.get("boca_aberta"):
             boca = max(boca, _limitar((indicadores.get("tempo_boca_aberta") or 0.0) / p.tempo_referencia_boca))
         cabeca = 0.0
@@ -172,10 +213,18 @@ class ClassificadorFadiga:
             cabeca *= _limitar(indicadores.get("intensidade_cabeca", 1.0))
 
         olhos = max(olhos, self._escore_eventos(indicadores, "olhos", agora, p.janela_evento_olhos, p.tempo_referencia_olhos))
-        boca = max(boca, self._escore_eventos(indicadores, "boca", agora, p.janela_evento_boca, p.tempo_referencia_boca))
+        if frequencia_bocejos >= p.minimo_bocejos:
+            boca = max(boca, self._escore_eventos(
+                indicadores, "boca", agora, p.janela_evento_boca,
+                p.tempo_referencia_boca
+            ))
         cabeca = max(cabeca, self._escore_eventos(indicadores, "cabeca", agora, p.janela_evento_cabeca, p.tempo_referencia_cabeca))
         olhos = max(olhos, self._frequencia_legada(indicadores, "olhos", agora, "frequencia_fechamentos_prolongados", p.minimo_fechamentos_prolongados, p.janela_evento_olhos))
-        boca = max(boca, self._frequencia_legada(indicadores, "boca", agora, "frequencia_bocejos", p.minimo_bocejos, p.janela_evento_boca))
+        if frequencia_bocejos >= p.minimo_bocejos:
+            boca = max(boca, self._frequencia_legada(
+                indicadores, "boca", agora, "frequencia_bocejos",
+                p.minimo_bocejos, p.janela_evento_boca
+            ))
         cabeca = max(cabeca, self._frequencia_legada(indicadores, "cabeca", agora, "frequencia_movimentos", p.minimo_movimentos_cabeca, p.janela_evento_cabeca))
 
         perclos = indicadores.get("perclos")
@@ -237,6 +286,11 @@ class ClassificadorFadiga:
             self.historico_indicadores.clear()
             self._limpar_transicao()
             self._inicio_evidencia_fadiga = None
+            self._inicio_evidencia_individual = {
+                "olhos": None,
+                "boca": None,
+                "cabeca": None,
+            }
             self.escores = {"olhos": 0.0, "boca": 0.0, "cabeca": 0.0}
             self.escore_total = 0.0
             self.categorias_significativas = 0
@@ -247,7 +301,16 @@ class ClassificadorFadiga:
                 "motivo_classificacao": estado_entrada,
                 "sinal_atencao": False,
                 "sinal_fadiga": False,
+                "sinal_fadiga_individual": False,
+                "sinal_fadiga_combinada": False,
                 "fadiga_persistente": False,
+                "fadiga_individual": False,
+                "fadiga_combinada": False,
+                "modo_fadiga": None,
+                "fatores_fadiga": [],
+                "nivel_olhos": "NORMAL",
+                "nivel_boca": "NORMAL",
+                "nivel_cabeca": "NORMAL",
                 "persistencia_fadiga_decorrida": 0.0,
                 "persistencia_fadiga_necessaria": self.parametros.persistencia_entrada_fadiga,
                 "persistencia_transicao_decorrida": 0.0,
@@ -265,11 +328,39 @@ class ClassificadorFadiga:
                 self._inicio_evidencia_fadiga = agora
         else:
             self._inicio_evidencia_fadiga = None
-        fadiga_persistente = fadiga_sinal and agora - self._inicio_evidencia_fadiga >= p.persistencia_entrada_fadiga
+        fatores_individuais_persistentes = self._atualizar_evidencia_individual(
+            indicadores, agora
+        )
+        fadiga_combinada = (
+            fadiga_sinal
+            and agora - self._inicio_evidencia_fadiga
+            >= p.persistencia_entrada_fadiga
+        )
+        fadiga_individual = bool(fatores_individuais_persistentes)
+        sinal_fadiga_individual = bool(
+            any(
+                score >= p.limiar_fadiga_individual
+                for score in self.escores.values()
+            )
+        )
+        fadiga_persistente = fadiga_combinada or fadiga_individual
+        if fadiga_combinada:
+            modo_fadiga = "COMBINADA"
+            fatores_fadiga = [
+                categoria
+                for categoria, score in self.escores.items()
+                if score >= p.limiar_categoria_significativa
+            ]
+        elif fadiga_individual:
+            modo_fadiga = "INDIVIDUAL"
+            fatores_fadiga = fatores_individuais_persistentes
+        else:
+            modo_fadiga = None
+            fatores_fadiga = []
 
         atencao_sinal = self.escore_total >= p.limiar_atencao or self.categorias_significativas > 0
         if self.estado_atual == "FADIGA":
-            if self.escore_total >= p.limiar_saida_fadiga and self.categorias_significativas >= 2:
+            if fadiga_persistente:
                 desejado = "FADIGA"
             elif self.escore_total >= p.limiar_saida_atencao or self.categorias_significativas:
                 desejado = "ATENCAO"
@@ -282,9 +373,15 @@ class ClassificadorFadiga:
         else:
             desejado = "ATENCAO" if atencao_sinal else "ATENTO"
 
+        inicio_persistencia = self._inicio_evidencia_fadiga
+        if modo_fadiga == "INDIVIDUAL" and fatores_individuais_persistentes:
+            inicio_persistencia = min(
+                self._inicio_evidencia_individual[categoria]
+                for categoria in fatores_individuais_persistentes
+            )
         persistencia_fadiga_decorrida = (
-            0.0 if self._inicio_evidencia_fadiga is None
-            else max(0.0, agora - self._inicio_evidencia_fadiga)
+            0.0 if inicio_persistencia is None
+            else max(0.0, agora - inicio_persistencia)
         )
         if desejado == "FADIGA":
             persistencia_transicao_necessaria = 0.0
@@ -305,14 +402,47 @@ class ClassificadorFadiga:
             motivos.append("boca")
         if self.escores["cabeca"] >= p.limiar_categoria_significativa:
             motivos.append("cabeca")
+
+        niveis = {}
+        for categoria, score in self.escores.items():
+            if categoria in fatores_individuais_persistentes:
+                niveis[categoria] = "FADIGA"
+            elif score >= p.limiar_categoria_significativa:
+                niveis[categoria] = "ATENCAO"
+            else:
+                niveis[categoria] = "NORMAL"
+
+        if fadiga_combinada:
+            motivo_alerta = "FADIGA_COMBINADA:" + "+".join(fatores_fadiga)
+        elif fadiga_individual:
+            motivo_alerta = "FADIGA_INDIVIDUAL:" + "+".join(fatores_fadiga)
+        elif motivos:
+            motivo_alerta = "ATENCAO:" + "+".join(motivos)
+        else:
+            motivo_alerta = "SEM_INDICADOR_SIGNIFICATIVO"
+
         self.diagnostico = {
             "estado_desejado": desejado,
             "motivo_classificacao": ",".join(motivos) or "sem_indicador_significativo",
+            "motivo_alerta": motivo_alerta,
             "sinal_atencao": atencao_sinal,
             "sinal_fadiga": fadiga_sinal,
+            "sinal_fadiga_individual": sinal_fadiga_individual,
+            "sinal_fadiga_combinada": fadiga_sinal,
             "fadiga_persistente": fadiga_persistente,
+            "fadiga_individual": fadiga_individual,
+            "fadiga_combinada": fadiga_combinada,
+            "modo_fadiga": modo_fadiga,
+            "fatores_fadiga": fatores_fadiga,
+            "nivel_olhos": niveis["olhos"],
+            "nivel_boca": niveis["boca"],
+            "nivel_cabeca": niveis["cabeca"],
             "persistencia_fadiga_decorrida": persistencia_fadiga_decorrida,
-            "persistencia_fadiga_necessaria": p.persistencia_entrada_fadiga,
+            "persistencia_fadiga_necessaria": (
+                p.persistencia_fadiga_individual
+                if modo_fadiga == "INDIVIDUAL"
+                else p.persistencia_entrada_fadiga
+            ),
             "persistencia_transicao_decorrida": persistencia_transicao_decorrida,
             "persistencia_transicao_necessaria": persistencia_transicao_necessaria,
             "candidato_transicao": self._candidato,

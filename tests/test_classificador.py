@@ -84,8 +84,11 @@ class ClassificadorTests(unittest.TestCase):
     def test_dois_eventos_proximos_de_categorias_diferentes(self):
         classificador = self.criar()
         self.iniciar(classificador)
-        sinais = indicadores(eventos={"olhos": [self.evento(0.0, duracao=2.0)],
-                                      "boca": [self.evento(0.0, duracao=1.0)]})
+        sinais = indicadores(
+            eventos={"olhos": [self.evento(0.0, duracao=2.0)],
+                     "boca": [self.evento(0.0, duracao=1.0)]},
+            frequencia_bocejos=2,
+        )
         classificador.atualizar(sinais, 0.0)
         self.assertEqual(classificador.categorias_significativas, 2)
         self.assertGreaterEqual(classificador.escore_total, 0.5)
@@ -93,8 +96,11 @@ class ClassificadorTests(unittest.TestCase):
     def test_eventos_distantes_nao_formam_combinacao(self):
         classificador = self.criar()
         self.tornar_atento(classificador)
-        sinais = indicadores(eventos={"olhos": [self.evento(0.0, duracao=2.0)],
-                                      "boca": [self.evento(0.0, duracao=1.0)]})
+        sinais = indicadores(
+            eventos={"olhos": [self.evento(0.0, duracao=2.0)],
+                     "boca": [self.evento(0.0, duracao=1.0)]},
+            frequencia_bocejos=2,
+        )
         classificador.atualizar(sinais, 0.0)
         classificador.atualizar(sinais, 6.1)
         self.assertEqual(classificador.categorias_significativas, 0)
@@ -103,8 +109,11 @@ class ClassificadorTests(unittest.TestCase):
     def test_duas_categorias_significativas_permitam_fadiga(self):
         classificador = self.criar()
         self.iniciar(classificador)
-        sinais = indicadores(eventos={"olhos": [self.evento(0.0, duracao=2.0)],
-                                      "boca": [self.evento(0.0, duracao=1.0)]})
+        sinais = indicadores(
+            eventos={"olhos": [self.evento(0.0, duracao=2.0)],
+                     "boca": [self.evento(0.0, duracao=1.0)]},
+            frequencia_bocejos=2,
+        )
         self.assertEqual(classificador.atualizar(sinais, 0.0), "CALIBRANDO")
         self.assertEqual(classificador.atualizar(sinais, 0.6), "ATENCAO")
         self.assertEqual(classificador.atualizar(sinais, 0.9), "ATENCAO")
@@ -119,10 +128,53 @@ class ClassificadorTests(unittest.TestCase):
         self.assertNotEqual(classificador.estado_atual, "FADIGA")
         self.assertEqual(classificador.categorias_significativas, 1)
 
+    def test_um_indicador_prolongado_pode_entrar_em_fadiga_individual(self):
+        classificador = self.criar()
+        self.tornar_atento(classificador)
+        sinais = indicadores(olhos_fechados=True, tempo_olho_fechado=2.0)
+        classificador.atualizar(sinais, 0.6)
+        self.assertNotEqual(classificador.estado_atual, "FADIGA")
+        self.assertEqual(classificador.atualizar(sinais, 4.7), "FADIGA")
+        self.assertEqual(classificador.diagnostico["modo_fadiga"], "INDIVIDUAL")
+        self.assertEqual(classificador.diagnostico["fatores_fadiga"], ["olhos"])
+
+    def test_cabeca_prolongada_tem_evidencia_individual(self):
+        classificador = self.criar()
+        self.tornar_atento(classificador)
+        sinais = indicadores(
+            movimento_cabeca=True,
+            tempo_movimento_cabeca=2.0,
+        )
+        classificador.atualizar(sinais, 0.6)
+        self.assertEqual(classificador.atualizar(sinais, 4.7), "FADIGA")
+        self.assertEqual(classificador.diagnostico["fatores_fadiga"], ["cabeca"])
+
+    def test_um_bocejo_nao_gera_fadiga_individual(self):
+        classificador = self.criar()
+        self.tornar_atento(classificador)
+        sinais = indicadores(bocejo=True, frequencia_bocejos=1)
+        classificador.atualizar(sinais, 0.6)
+        classificador.atualizar(sinais, 5.0)
+        self.assertNotEqual(classificador.estado_atual, "FADIGA")
+
+    def test_boca_aberta_e_avaliada_antes_de_fechar(self):
+        classificador = self.criar()
+        self.tornar_atento(classificador)
+        sinais = indicadores(
+            boca_aberta=True,
+            tempo_boca_aberta=0.8,
+            frequencia_bocejos=0,
+        )
+        classificador.atualizar(sinais, 0.6)
+        self.assertGreater(classificador.escores["boca"], 0.0)
+
     def test_entrada_e_saida_de_atencao_com_persistencia(self):
         classificador = self.criar()
         self.tornar_atento(classificador)
-        evento = indicadores(eventos={"boca": [self.evento(1.0, fim=1.0, duracao=1.0)]})
+        evento = indicadores(
+            eventos={"boca": [self.evento(1.0, fim=1.0, duracao=1.0)]},
+            frequencia_bocejos=2,
+        )
         self.assertEqual(classificador.atualizar(evento, 1.0), "ATENTO")
         self.assertEqual(classificador.atualizar(evento, 1.5), "ATENCAO")
         vazio = indicadores()
@@ -132,8 +184,11 @@ class ClassificadorTests(unittest.TestCase):
     def test_entrada_e_saida_de_fadiga_com_histerese(self):
         classificador = self.criar()
         self.iniciar(classificador)
-        sinais = indicadores(eventos={"olhos": [self.evento(0.0, duracao=2.0)],
-                                      "boca": [self.evento(0.0, duracao=1.0)]})
+        sinais = indicadores(
+            eventos={"olhos": [self.evento(0.0, duracao=2.0)],
+                     "boca": [self.evento(0.0, duracao=1.0)]},
+            frequencia_bocejos=2,
+        )
         classificador.atualizar(sinais, 0.0)
         classificador.atualizar(sinais, 0.6)
         self.assertEqual(classificador.atualizar(sinais, 1.7), "FADIGA")

@@ -26,7 +26,14 @@ class DetectorTests(unittest.TestCase):
         self.assertAlmostEqual(detector.ear_referencia, 0.30)
         self.assertAlmostEqual(detector.ear_referencia_direito, 0.30)
         self.assertAlmostEqual(detector.ear_referencia_esquerdo, 0.30)
-        self.assertAlmostEqual(detector.limiar_ear, 0.30 * 0.96)
+        self.assertAlmostEqual(detector.limiar_ear, 0.30)
+
+    def test_fechamento_considera_media_quando_um_olho_tem_landmark_ruim(self):
+        detector = self._calibrar_olhos()
+        fechado, _ = detector.atualizar(
+            0.20, 2.0, ear_direito=0.10, ear_esquerdo=0.30
+        )
+        self.assertTrue(fechado)
 
     def test_piscada_normal_nao_e_fechamento_prolongado(self):
         detector = self._calibrar_olhos()

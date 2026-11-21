@@ -91,12 +91,24 @@ class MonitoramentoThread(QThread):
             "peso_olhos": parametros.peso_olhos,
             "peso_boca": parametros.peso_boca,
             "peso_cabeca": parametros.peso_cabeca,
+            "limiar_fadiga_individual": parametros.limiar_fadiga_individual,
+            "persistencia_fadiga_individual": parametros.persistencia_fadiga_individual,
             "escore_total": self.classificador.escore_total,
             "categorias_significativas": self.classificador.categorias_significativas,
             "motivo_classificacao": diagnostico.get("motivo_classificacao"),
+            "motivo_alerta": diagnostico.get("motivo_alerta"),
             "sinal_atencao": diagnostico.get("sinal_atencao"),
             "sinal_fadiga": diagnostico.get("sinal_fadiga"),
+            "sinal_fadiga_individual": diagnostico.get("sinal_fadiga_individual"),
+            "sinal_fadiga_combinada": diagnostico.get("sinal_fadiga_combinada"),
             "fadiga_persistente": diagnostico.get("fadiga_persistente"),
+            "fadiga_individual": diagnostico.get("fadiga_individual"),
+            "fadiga_combinada": diagnostico.get("fadiga_combinada"),
+            "modo_fadiga": diagnostico.get("modo_fadiga"),
+            "fatores_fadiga": diagnostico.get("fatores_fadiga"),
+            "nivel_olhos": diagnostico.get("nivel_olhos"),
+            "nivel_boca": diagnostico.get("nivel_boca"),
+            "nivel_cabeca": diagnostico.get("nivel_cabeca"),
             "persistencia_fadiga_decorrida": diagnostico.get("persistencia_fadiga_decorrida"),
             "persistencia_fadiga_necessaria": diagnostico.get("persistencia_fadiga_necessaria"),
             "persistencia_transicao_decorrida": diagnostico.get("persistencia_transicao_decorrida"),
@@ -184,7 +196,9 @@ class MonitoramentoThread(QThread):
                     model_asset_path=MODEL_PATH
                 ),
                 running_mode=mp.tasks.vision.RunningMode.IMAGE,
-                num_faces=1
+                num_faces=1,
+                min_face_detection_confidence=0.35,
+                min_face_presence_confidence=0.35,
             )
 
             with mp.tasks.vision.FaceLandmarker.create_from_options(
@@ -229,8 +243,17 @@ class MonitoramentoThread(QThread):
                         self.boca.interromper(agora)
                         self.detector_cabeca.interromper(agora)
 
+                        evento_cabeca = self.detector_cabeca.ultimo_evento
+                        preservar_cabeca = bool(
+                            evento_cabeca
+                            and evento_cabeca.get("confirmado")
+                            and agora - evento_cabeca.get("fim", agora)
+                            <= self.classificador.parametros.janela_evento_cabeca
+                        )
+
                         dados = {
-                            "estado": "SEM_ROSTO",
+                            "estado": "ATENTO" if preservar_cabeca else "SEM_ROSTO",
+                            "preservar_evidencia_cabeca": preservar_cabeca,
                             "ear": None,
                             "mar": None,
                             "pitch": None,
@@ -259,10 +282,22 @@ class MonitoramentoThread(QThread):
                             ),
                             "evento_olhos": self.olhos.ultimo_evento,
                             "evento_boca": self.boca.ultimo_evento,
-                            "evento_cabeca": self.detector_cabeca.ultimo_evento,
+                            "evento_cabeca": evento_cabeca,
                             "estado_olhos": "SEM_ROSTO",
                             "estado_boca": "SEM_ROSTO",
-                            "estado_cabeca": "SEM_ROSTO",
+                            "estado_cabeca": "MOVIMENTO" if preservar_cabeca else "SEM_ROSTO",
+                            "movimento_cabeca": preservar_cabeca,
+                            "tempo_movimento": (
+                                evento_cabeca.get("duracao")
+                                if preservar_cabeca else 0.0
+                            ),
+                            "frequencia_movimentos": (
+                                self.detector_cabeca.frequencia_movimentos(agora)
+                            ),
+                            "tempo_movimento_cabeca": (
+                                evento_cabeca.get("duracao", 0.0)
+                                if preservar_cabeca else 0.0
+                            ),
                             "perclos": None,
                             "perclos_valido": False,
                             "cobertura_perclos": 0.0,
@@ -371,7 +406,10 @@ class MonitoramentoThread(QThread):
                                 )
                             ),
                             "bocejo": bocejo,
+                            "boca_aberta": self.boca.inicio_bocejo is not None,
+                            "tempo_boca_aberta": tempo_abertura,
                             "movimento_cabeca": movimento_cabeca,
+                            "tempo_movimento_cabeca": tempo_movimento,
                         },
                         agora,
                     )

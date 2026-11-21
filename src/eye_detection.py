@@ -58,7 +58,7 @@ class DetectorOlhos:
         tempo_calibracao=5,
         tempo_minimo_fechamento=1.5,
         janela_frequencia=60.0,
-        fator_limiar=0.96,
+        fator_limiar=1.0,
         minimo_amostras_calibracao=10,
     ):
         self.tempo_calibracao = tempo_calibracao
@@ -163,10 +163,7 @@ class DetectorOlhos:
             and self.limiar_ear_direito is not None
             and self.limiar_ear_esquerdo is not None
         ):
-            olhos_fechados = (
-                ear_direito < self.limiar_ear_direito
-                and ear_esquerdo < self.limiar_ear_esquerdo
-            )
+            olhos_fechados = ear_medio < self.limiar_ear
         else:
             olhos_fechados = ear_medio < self.limiar_ear
 

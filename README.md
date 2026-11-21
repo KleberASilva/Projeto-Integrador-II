@@ -1,10 +1,8 @@
 # Detector de Fadiga Automotivo Baseado em Visão Computacional
 
-Repositório destinado ao desenvolvimento do projeto da disciplina de **Projeto Integrador II**, do curso de **Engenharia de Computação da Universidade Federal de Santa Maria (UFSM)**.
+Protótipo desenvolvido para a disciplina de Projeto Integrador II, do curso de Engenharia de Computação da Universidade Federal de Santa Maria (UFSM).
 
-O projeto consiste no desenvolvimento de um protótipo de monitoramento de sinais comportamentais associados à fadiga ao volante, utilizando visão computacional para análise facial em tempo real.
-
----
+O sistema utiliza uma câmera para acompanhar indicadores visuais associados à sonolência: olhos, boca e orientação da cabeça. O processamento é local e não utiliza celular, GPS, acelerômetro ou outros sensores externos.
 
 ## Equipe
 
@@ -15,244 +13,205 @@ O projeto consiste no desenvolvimento de um protótipo de monitoramento de sinai
 
 **Orientador:** Prof. Lucas Feksa Ramos
 
----
+## Estado atual
 
-## Sobre o Projeto
+O projeto está em estágio de **protótipo funcional em validação experimental**.
 
-A fadiga ao volante representa um importante fator de risco para a segurança no trânsito. Alterações no comportamento do motorista, como fechamento prolongado dos olhos, bocejos frequentes e mudanças na orientação da cabeça, podem indicar condições de sonolência e redução do estado de alerta.
+Já estão implementados:
 
-O projeto propõe o desenvolvimento de um sistema capaz de monitorar esses sinais por meio de uma câmera, utilizando técnicas de visão computacional e processamento de landmarks faciais.
+- captura de vídeo e detecção facial com MediaPipe Tasks;
+- calibração dos indicadores de olhos, boca e cabeça;
+- EAR para acompanhamento da abertura dos olhos e fechamentos prolongados;
+- MAR para acompanhamento da abertura da boca e bocejos;
+- estimativa de pitch, yaw e roll da cabeça;
+- filtragem temporal e persistência dos eventos;
+- classificação em `ATENTO`, `ATENCAO`, `FADIGA`, `SEM_ROSTO` e `CALIBRANDO`;
+- distinção diagnóstica entre `FADIGA_INDIVIDUAL` e `FADIGA_COMBINADA`;
+- indicação dos fatores que contribuíram para a decisão;
+- interface PySide6 com indicadores, eventos, alertas sonoros e recalibração;
+- coleta de telemetria controlada por botão;
+- capturas automáticas durante sinais de alerta;
+- capturas manuais independentes da coleta;
+- marcações manuais para comparação posterior;
+- testes automatizados dos detectores, classificador e telemetria.
 
-O processamento é realizado localmente, sem necessidade de transmissão das imagens para servidores externos.
+Os parâmetros ainda são experimentais. O sistema não é um dispositivo clínico e não deve ser utilizado como único mecanismo de segurança durante a condução.
 
-### Indicadores Monitorados
+## Indicadores e classificação
 
-O sistema utiliza três indicadores principais:
+### Olhos
 
-- **EAR (Eye Aspect Ratio):** relação geométrica utilizada para estimar a abertura dos olhos e identificar períodos de fechamento prolongado.
-- **MAR (Mouth Aspect Ratio):** relação geométrica utilizada para identificar abertura prolongada da boca e detectar possíveis bocejos.
-- **Head Pose Estimation:** estimativa da orientação da cabeça nos eixos de rotação, permitindo identificar inclinações e movimentos potencialmente associados à desatenção.
+O EAR é calculado para os dois olhos e a decisão de fechamento utiliza o EAR médio. A calibração inicial registra a referência da abertura dos olhos. Fechamentos prolongados e PERCLOS podem contribuir para a classificação quando os dados possuem cobertura válida. O PERCLOS está desabilitado por padrão até que a cobertura da janela seja validada experimentalmente.
 
-Os indicadores são utilizados em conjunto com mecanismos de calibração e filtragem temporal, buscando adaptar as referências às características individuais e reduzir detecções ocasionadas por movimentos momentâneos.
+### Boca
 
-### Interface e Monitoramento
+O MAR é comparado com uma referência calibrada. A abertura da boca é acompanhada enquanto permanece aberta; um bocejo isolado não confirma fadiga individual. A quantidade mínima atual é de dois bocejos dentro da janela de análise para que eventos repetidos contribuam para a classificação.
 
-O sistema conta com uma interface gráfica desenvolvida em PySide6, que permite acompanhar o monitoramento em tempo real.
+### Cabeça
 
-Entre os recursos disponíveis estão:
+O head pose estima pitch, yaw e roll usando landmarks faciais e `solvePnP`. Os limiares atuais do detector são:
 
-- Exibição da imagem capturada pela câmera.
-- Apresentação dos indicadores EAR, MAR e orientação da cabeça.
-- Identificação de estados de atenção e possíveis sinais de fadiga.
-- Alertas sonoros associados aos eventos detectados.
-- Registro de eventos durante a execução.
-- Recalibração dos indicadores.
-- Modo de teste para simulação dos estados da interface.
+- pitch: `15°`;
+- yaw: `50°`;
+- duração mínima de movimento: `1,5 s`.
 
----
+Quando um movimento de cabeça já foi confirmado e o rosto desaparece brevemente, a evidência pode ser preservada temporariamente. Isso não substitui a detecção facial e ainda precisa ser validado com dados reais.
 
-## Tecnologias Utilizadas
+### Classificador geral
 
-### Linguagem e Processamento
+O classificador trabalha com janelas temporais, escores e pesos:
 
-- **Python:** linguagem principal do projeto.
-- **OpenCV:** captura e processamento de imagens.
-- **MediaPipe Tasks:** identificação de landmarks faciais.
-- **NumPy:** operações matemáticas e processamento de dados.
+- olhos: `0,45`;
+- boca: `0,35`;
+- cabeça: `0,20`.
 
-### Interface e Alertas
+Um indicador acima do limiar pode gerar `ATENCAO`. Uma evidência individual persistente pode gerar `FADIGA_INDIVIDUAL`. Evidências significativas de múltiplas categorias podem gerar `FADIGA_COMBINADA`. Os motivos, fatores, escores, pesos, limiares e persistências são registrados na telemetria.
 
-- **PySide6:** desenvolvimento da interface gráfica.
-- **Winsound:** reprodução de alertas sonoros no Windows.
+Os valores atuais são parâmetros de protótipo e devem ser ajustados após a coleta anotada.
 
-### Desenvolvimento e Controle de Versão
+## Interface e atalhos
 
-- **Git:** controle de versão.
-- **GitHub:** hospedagem do repositório e colaboração entre integrantes.
-- **Visual Studio Code:** ambiente de desenvolvimento.
+Recursos disponíveis:
 
----
+- visualização da câmera com a imagem completa e preservação da proporção;
+- indicadores EAR, MAR e head pose;
+- cartão de estado geral e motivo da classificação;
+- distinção visual entre indicador em atenção e indicador em fadiga individual;
+- eventos e alertas sonoros;
+- botão **Iniciar coleta** / **Parar coleta**;
+- botão **Capturar (C)**;
+- botão **Recalibrar**;
+- botão **Testar som**.
 
-## Estrutura do Repositório
+| Tecla | Função |
+|---|---|
+| `F9` | Ativar ou desativar o modo de teste |
+| `1` a `5` | Simular estados no modo de teste |
+| `R` | Recalibrar os detectores |
+| `C` | Capturar a tela manualmente |
+| `F11` | Alternar tela cheia |
+| `Esc` | Sair da tela cheia |
+| `F1` | Marcar início do teste |
+| `F2` / `F3` | Marcar rotação para esquerda / direita |
+| `F4` / `F5` | Marcar inclinação para cima / baixo |
+| `F6` | Marcar piscadas |
+| `F7` | Marcar fechamento prolongado |
+| `F8` | Marcar bocejo |
+| `End` | Marcar fim do teste |
+
+As marcações manuais só são gravadas quando uma coleta está ativa. Elas não alteram a classificação automática.
+
+## Estrutura do repositório
 
 ```text
 Projeto-Integrador-II/
-│
 ├── src/
-│   ├── main.py
-│   ├── monitoramento.py
-│   ├── interface.py
-│   ├── eye_detection.py
-│   ├── boca.py
-│   ├── head_pose.py
-│   │
+│   ├── main.py                  # ponto de entrada
+│   ├── interface.py             # interface, atalhos e visualização
+│   ├── monitoramento.py         # câmera, MediaPipe e integração dos detectores
+│   ├── eye_detection.py         # EAR, piscadas, fechamentos e PERCLOS
+│   ├── boca.py                  # MAR e bocejos
+│   ├── head_pose.py             # orientação e eventos da cabeça
+│   ├── classificador_fadiga.py  # escores, persistência e estados gerais
+│   ├── telemetria.py            # CSVs, eventos e capturas sincronizadas
 │   ├── models/
 │   │   └── face_landmarker.task
-│   │
-│   ├── data/
-│   │   └── telemetry/
-│   │       └── .gitkeep
-│   │
-│   └── sons/
-│       ├── atencao.wav
-│       └── fadiga.wav
-│
+│   ├── sons/
+│   │   ├── atencao.wav
+│   │   └── fadiga.wav
+│   └── data/telemetry/           # dados gerados, ignorados pelo Git
+├── tests/                        # testes automatizados
 ├── .gitignore
 ├── LICENSE
 └── README.md
 ```
 
----
+## Instalação e execução
 
-## Instalação e Execução
+### Criar o ambiente
 
-### 1. Clonar o repositório
-
-```bash
-git clone https://github.com/KleberASilva/Projeto-Integrador-II.git
-
-cd Projeto-Integrador-II
-```
-
-### 2. Criar ambiente virtual
-
-```bash
-python -m venv .venv
-```
-
-Ativação no Windows:
+No Windows PowerShell:
 
 ```powershell
+python -m venv .venv
 .venv\Scripts\Activate.ps1
 ```
 
-### 3. Instalar dependências
+### Instalar dependências
 
-```bash
-pip install opencv-python mediapipe numpy PySide6
+```powershell
+python -m pip install opencv-python mediapipe numpy PySide6
 ```
 
-### 4. Executar o sistema
+### Executar
 
-```bash
+```powershell
 python src/main.py
 ```
 
-É necessário disponibilizar uma webcam para a captura das imagens e o modelo `face_landmarker.task` no diretório `src/models/`.
+É necessário possuir uma webcam funcional e o arquivo `src/models/face_landmarker.task`. O sistema foi estruturado para Windows por utilizar `winsound` nos alertas sonoros.
 
----
+## Coleta de dados
 
-## Modo de Teste
+O monitoramento pode permanecer ativo sem salvar dados. A gravação começa somente após clicar em **Iniciar coleta**. Ao clicar em **Parar coleta** ou fechar o programa, a sessão é encerrada e os arquivos são fechados.
 
-A interface disponibiliza um modo de teste para demonstração dos estados do sistema, permitindo simular situações sem depender da ocorrência de um evento real diante da câmera.
+Cada coleta cria uma pasta própria:
 
-| Tecla | Função |
-|---|---|
-| F9 | Ativar/desativar modo de teste |
-| 1 | Atento |
-| 2 | Bocejo |
-| 3 | Inclinação da cabeça |
-| 4 | Possível fadiga |
-| 5 | Rosto não detectado |
-| R | Recalibrar |
-| F11 | Alternar tela cheia |
+```text
+src/data/telemetry/<session_id>/
+├── telemetria.csv
+├── eventos.csv
+└── capturas/
+```
 
-Os estados simulados não representam resultados reais dos algoritmos de detecção.
+### `telemetria.csv`
 
----
+Possui uma linha por frame, incluindo timestamp, frame, estado, EAR, MAR, pitch, yaw, roll, referências, limiares, estados individuais, durações, PERCLOS, eventos, escores, pesos, modo de fadiga, fatores contribuintes e critérios de persistência.
 
-## Status do Projeto
+### `eventos.csv`
 
-**Em desenvolvimento.**
+Registra eventos automáticos e marcações manuais com origem, tipo, descrição, timestamps, duração, confirmação, motivo e frames associados.
 
-O protótipo possui monitoramento facial em tempo real, interface gráfica e integração dos módulos de detecção de olhos, boca e orientação da cabeça.
+### Capturas
 
-As próximas etapas envolvem aprimoramento dos critérios de detecção, avaliação conjunta dos indicadores e validação experimental do sistema.
+Capturas automáticas são salvas durante uma coleta quando ocorre uma entrada em condição relevante, como fechamento prolongado dos olhos, abertura prolongada da boca, movimento confirmado da cabeça, `ATENCAO` ou `FADIGA`.
 
----
+Capturas manuais podem ser feitas com `C` ou pelo botão **Capturar (C)**, mesmo sem coleta ativa. Elas são salvas em:
 
-## Disciplina
+```text
+src/data/telemetry/manual_capturas/
+```
 
-**Projeto Integrador II**  
-**Curso:** Engenharia de Computação  
-**Instituição:** Universidade Federal de Santa Maria (UFSM)  
-**Orientador:** Prof. Lucas Feksa Ramos
-
----
-
-## Licença
-
-Consulte o arquivo [LICENSE](LICENSE) para informações sobre os termos de utilização e distribuição do projeto.
-
-## Telemetria por sessão
-
-Cada execução cria um identificador próprio e dois arquivos em
-`src/data/telemetry/`:
-
-- `<session_id>/telemetria.csv`: uma linha por frame, com timestamp ISO 8601,
-  tempo monotônico desde o início, número do frame, estado, indicadores,
-  calibração, PERCLOS e orientação original, filtrada e relativa.
-- `<session_id>_eventos.csv`: eventos deduplicados com origem, tipo, início,
-  fim, duração, confirmação, motivo de interrupção e frames associados.
-
-Os arquivos existentes não são sobrescritos. Os CSVs gerados são ignorados
-por [`.gitignore`](.gitignore) para não entrarem no repositório.
-
-## Marcações manuais
-
-Durante uma sessão, as teclas abaixo registram uma marcação no arquivo de
-eventos sem alterar a classificação automática:
-
-| Tecla | Marcação |
-|---|---|
-| F1 | Início do teste |
-| F2 / F3 | Rotação para esquerda / direita |
-| F4 / F5 | Inclinação para cima / baixo |
-| F6 | Piscadas |
-| F7 | Fechamento prolongado |
-| F8 | Simulação de bocejo |
-| End | Fim do teste |
-
-## Capturas de diagnóstico
-
-O monitoramento da câmera pode permanecer ativo sem gravar arquivos. O botão
-**Iniciar coleta** cria uma nova sessão; **Parar coleta** fecha a sessão e
-interrompe a gravação de frames e capturas. Fechar a janela também encerra
-uma coleta ativa.
-
-Durante uma coleta, as capturas automáticas acontecem somente quando um sinal
-entra em condição de alerta: fechamento prolongado dos olhos, abertura
-prolongada da boca, movimento confirmado da cabeça, entrada em `ATENCAO` ou
-entrada em `FADIGA`. O botão **Capturar (C)** salva uma captura manual
-independente, com nome iniciado por `manual_`, mesmo fora de uma coleta.
-
-Cada sessão possui uma pasta `capturas/` dentro do diretório da sessão. A tecla
-`C` ou o botão **Capturar (C)** solicita uma imagem no próximo frame processado.
-A linha correspondente em `telemetria.csv` registra o caminho da captura,
-mantendo o mesmo `session_id`, timestamp e número do frame.
+Arquivos de telemetria, imagens de rosto e capturas locais não devem ser adicionados ao Git.
 
 ## Testes automatizados
 
-Execute a suíte determinística com o Python do ambiente virtual:
+Executar todos os testes:
 
 ```powershell
 .venv\Scripts\python.exe -m unittest discover -s tests -p "test_*.py" -v
 ```
 
-Os testes cobrem cálculo temporal de eventos, calibração sintética dos
-detectores, interrupção por ausência de rosto, simetria sintética do yaw,
-transições do classificador e persistência dos CSVs. Eles não substituem
-testes com webcam.
+Os testes cobrem cálculo geométrico e temporal, calibração sintética, limiares de olhos, eventos de boca, head pose, perda de rosto, transições do classificador, coleta controlada e persistência dos CSVs. Eles não substituem testes reais com webcam.
 
-## Limitações e validação experimental
+## Próximos passos
 
-Os parâmetros de calibração, duração mínima, frequência, cobertura do
-PERCLOS, persistência de estados e quantidade mínima de evidências são
-configuráveis no código e representam parâmetros de protótipo. Eles não são
-limiares clínicos ou uma validação científica de fadiga.
+1. **Coletar sessões controladas:** testar diferentes pessoas, iluminação, distância, posições e câmeras.
+2. **Anotar a referência real:** registrar manualmente olhos, bocejos, cabeça, atenção e fadiga.
+3. **Criar o analisador dos CSVs:** gerar matrizes de confusão e métricas por detector e para o classificador geral.
+4. **Ajustar os parâmetros:** usar os resultados para revisar EAR, MAR, head pose, persistências e quantidade mínima de eventos.
+5. **Documentar a avaliação:** registrar protocolo, resultados, falsos positivos, falsos negativos e limitações.
+6. **Avaliar Grafana:** integrar somente depois de estabilizar o formato dos dados e as métricas.
 
-Antes de interpretar o estado `FADIGA`, ainda é necessário realizar testes
-com webcam, iluminação e posições variadas, comparando as marcações manuais
-com os eventos dos CSVs. Também é necessário avaliar falsos positivos,
-falsos negativos, perda de rosto, variação de taxa de quadros e assimetria
-residual da orientação da cabeça.
+## Limitações
+
+- Os limiares não são clínicos nem cientificamente validados.
+- A qualidade da câmera, iluminação e posição do rosto afetam os landmarks.
+- Inclinações extremas podem causar perda temporária do rosto.
+- Os testes automatizados não medem desempenho em condições reais.
+- O resultado do próprio detector não pode ser usado como verdade de referência.
+- O protótipo não deve ser utilizado como único mecanismo de segurança ao dirigir.
+
+## Licença
+
+Consulte o arquivo [LICENSE](LICENSE) para informações sobre os termos de utilização e distribuição do projeto.

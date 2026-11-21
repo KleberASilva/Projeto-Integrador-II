@@ -195,8 +195,8 @@ class FiltroOrientacao:
 class DetectorCabeca:
     def __init__(
         self,
-        limite_pitch=25.0,
-        limite_yaw=30.0,
+        limite_pitch=15.0,
+        limite_yaw=50.0,
         tempo_minimo=1.5,
         janela_frequencia=60.0
     ):
@@ -280,7 +280,6 @@ class DetectorCabeca:
 
     def interromper(self, tempo_atual):
         """Interrompe o evento quando o rosto desaparece."""
-        self.ultimo_evento = None
         if self.inicio_evento is None:
             return
 
@@ -289,7 +288,7 @@ class DetectorCabeca:
             "inicio": self.inicio_evento,
             "fim": tempo_atual,
             "duracao": tempo_atual - self.inicio_evento,
-            "confirmado": False,
+            "confirmado": tempo_atual - self.inicio_evento >= self.tempo_minimo,
             "motivo": "SEM_ROSTO"
         }
 
