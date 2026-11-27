@@ -17,6 +17,7 @@ from threading import RLock
 import cv2
 import numpy as np
 
+from fila_banco import FilaBanco
 
 class Telemetria:
     """Escreve medições por frame e eventos estruturados sem sobrescrever sessões."""
@@ -112,6 +113,16 @@ class Telemetria:
         self._eventos_registrados = set()
         self._lock = RLock()
 
+        self.fila_banco = FilaBanco()
+
+        self.fila_banco.enviar(
+            "sessao",
+            {
+                "session_id": self.session_id,
+                "inicio_em": self.inicio_datetime.isoformat(),
+            },
+        )
+
     @staticmethod
     def _novo_session_id():
         instante = datetime.now().astimezone().strftime("%Y%m%d_%H%M%S_%f")
@@ -176,6 +187,38 @@ class Telemetria:
         self.escritor_eventos.writerow(linha)
         self.arquivo_eventos.flush()
         self._eventos_registrados.add(event_id)
+
+        dados_evento = {
+            "event_id": event_id,
+            "session_id": self.session_id,
+            "origem": origem,
+            "tipo": linha["tipo"],
+            "descricao": linha["descricao"],
+            "inicio_em": linha["inicio_timestamp"],
+            "fim_em": linha["fim_timestamp"],
+            "duracao_segundos": linha["duracao"],
+            "confirmado": linha["confirmado"],
+            "motivo": linha["motivo"],
+            "frame_inicio": linha["frame_inicio"],
+            "frame_fim": linha["frame_fim"],
+            "evento_original": evento,
+        }
+
+        dados_evento = json.loads(
+            json.dumps(
+                dados_evento,
+                ensure_ascii=False,
+                default=lambda valor: (
+                    valor.item() if hasattr(valor, "item")
+                    else valor.tolist() if hasattr(valor, "tolist")
+                    else valor.isoformat() if hasattr(valor, "isoformat")
+                    else str(valor)
+                ),
+            )
+        )
+
+        self.fila_banco.enviar("evento", dados_evento)
+
         return True
 
     def registrar_evento(self, evento, origem="sistema", frame=None, agora=None):
@@ -302,10 +345,41 @@ class Telemetria:
 
             self.escritor.writerow(linha)
             self.arquivo.flush()
+
+            dados_banco = json.loads(
+                json.dumps(
+                    linha,
+                    ensure_ascii=False,
+                    default=lambda valor: (
+                        valor.item() if hasattr(valor, "item")
+                        else valor.tolist() if hasattr(valor, "tolist")
+                        else valor.isoformat() if hasattr(valor, "isoformat")
+                        else str(valor)
+                    ),
+                )
+            )
+
+            self.fila_banco.enviar("telemetria", dados_banco)
+
             return captura_arquivo
 
     def fechar(self):
-        if not self.arquivo.closed:
-            self.arquivo.close()
-        if not self.arquivo_eventos.closed:
-            self.arquivo_eventos.close()
+        """Fecha os CSVs e encerra a sessão no PostgreSQL."""
+        with self._lock:
+            if not self.arquivo.closed:
+                self.arquivo.close()
+
+            if not self.arquivo_eventos.closed:
+                self.arquivo_eventos.close()
+
+            if getattr(self, "fila_banco", None) is not None:
+                self.fila_banco.enviar(
+                    "encerrar_sessao",
+                    {
+                        "session_id": self.session_id,
+                        "fim_em": datetime.now().astimezone().isoformat(),
+                    },
+                )
+
+                self.fila_banco.fechar()
+                self.fila_banco = None

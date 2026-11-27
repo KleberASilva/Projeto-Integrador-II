@@ -221,3 +221,8 @@ __marimo__/
 src/data/telemetry/*.csv
 src/data/telemetry/**/*.csv
 src/data/telemetry/**/*.png
+
+# Credenciais locais
+.env
+.env.*
+!.env.example
