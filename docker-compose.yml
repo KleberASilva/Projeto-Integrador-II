@@ -38,6 +38,7 @@ services:
     volumes:
       - grafana_data:/var/lib/grafana
       - ./infra/grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./dashboard_monitoramento_fadiga.json:/var/lib/grafana/dashboards/dashboard_monitoramento_fadiga.json:ro
     networks:
       - monitoramento
 

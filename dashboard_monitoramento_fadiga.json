@@ -1,0 +1,984 @@
+﻿{
+    "annotations":  {
+                        "list":  [
+                                     {
+                                         "builtIn":  1,
+                                         "datasource":  {
+                                                            "type":  "grafana",
+                                                            "uid":  "-- Grafana --"
+                                                        },
+                                         "enable":  true,
+                                         "hide":  true,
+                                         "iconColor":  "rgba(0, 211, 255, 1)",
+                                         "name":  "Annotations \u0026 Alerts",
+                                         "type":  "dashboard"
+                                     }
+                                 ]
+                    },
+    "editable":  true,
+    "fiscalYearStartMonth":  0,
+    "graphTooltip":  0,
+    "id":  11,
+    "links":  [
+
+              ],
+    "panels":  [
+                   {
+                       "datasource":  {
+                                          "type":  "grafana-postgresql-datasource",
+                                          "uid":  "postgres-monitoramento"
+                                      },
+                       "fieldConfig":  {
+                                           "defaults":  {
+                                                            "color":  {
+                                                                          "mode":  "palette-classic"
+                                                                      },
+                                                            "custom":  {
+                                                                           "axisBorderShow":  false,
+                                                                           "axisCenteredZero":  false,
+                                                                           "axisColorMode":  "text",
+                                                                           "axisLabel":  "",
+                                                                           "axisPlacement":  "auto",
+                                                                           "barAlignment":  0,
+                                                                           "barWidthFactor":  0.6,
+                                                                           "drawStyle":  "line",
+                                                                           "fillOpacity":  0,
+                                                                           "gradientMode":  "none",
+                                                                           "hideFrom":  {
+                                                                                            "legend":  false,
+                                                                                            "tooltip":  false,
+                                                                                            "viz":  false
+                                                                                        },
+                                                                           "insertNulls":  false,
+                                                                           "lineInterpolation":  "linear",
+                                                                           "lineWidth":  1,
+                                                                           "pointSize":  5,
+                                                                           "scaleDistribution":  {
+                                                                                                     "type":  "linear"
+                                                                                                 },
+                                                                           "showPoints":  "auto",
+                                                                           "spanNulls":  false,
+                                                                           "stacking":  {
+                                                                                            "group":  "A",
+                                                                                            "mode":  "none"
+                                                                                        },
+                                                                           "thresholdsStyle":  {
+                                                                                                   "mode":  "off"
+                                                                                               }
+                                                                       },
+                                                            "mappings":  [
+
+                                                                         ],
+                                                            "thresholds":  {
+                                                                               "mode":  "absolute",
+                                                                               "steps":  [
+                                                                                             {
+                                                                                                 "color":  "green"
+                                                                                             },
+                                                                                             {
+                                                                                                 "color":  "red",
+                                                                                                 "value":  80
+                                                                                             }
+                                                                                         ]
+                                                                           }
+                                                        },
+                                           "overrides":  [
+
+                                                         ]
+                                       },
+                       "gridPos":  {
+                                       "h":  6,
+                                       "w":  8,
+                                       "x":  0,
+                                       "y":  0
+                                   },
+                       "id":  4,
+                       "options":  {
+                                       "legend":  {
+                                                      "calcs":  [
+
+                                                                ],
+                                                      "displayMode":  "list",
+                                                      "placement":  "bottom",
+                                                      "showLegend":  true
+                                                  },
+                                       "tooltip":  {
+                                                       "hideZeros":  false,
+                                                       "mode":  "single",
+                                                       "sort":  "none"
+                                                   }
+                                   },
+                       "pluginVersion":  "11.6.0",
+                       "targets":  [
+                                       {
+                                           "datasource":  {
+                                                              "type":  "grafana-postgresql-datasource",
+                                                              "uid":  "postgres-monitoramento"
+                                                          },
+                                           "editorMode":  "code",
+                                           "format":  "table",
+                                           "rawQuery":  true,
+                                           "rawSql":  "SELECT\r\n    timestamp AS \"time\",\r\n    escore_boca AS \"Escore da Boca\"\r\nFROM telemetria\r\nWHERE $__timeFilter(timestamp)\r\n  AND escore_boca IS NOT NULL\r\nORDER BY timestamp;",
+                                           "refId":  "A",
+                                           "sql":  {
+                                                       "columns":  [
+                                                                       {
+                                                                           "parameters":  [
+
+                                                                                          ],
+                                                                           "type":  "function"
+                                                                       }
+                                                                   ],
+                                                       "groupBy":  [
+                                                                       {
+                                                                           "property":  {
+                                                                                            "type":  "string"
+                                                                                        },
+                                                                           "type":  "groupBy"
+                                                                       }
+                                                                   ],
+                                                       "limit":  50
+                                                   }
+                                       }
+                                   ],
+                       "title":  "Escore da Boca",
+                       "type":  "timeseries"
+                   },
+                   {
+                       "datasource":  {
+                                          "type":  "grafana-postgresql-datasource",
+                                          "uid":  "postgres-monitoramento"
+                                      },
+                       "fieldConfig":  {
+                                           "defaults":  {
+                                                            "color":  {
+                                                                          "mode":  "palette-classic"
+                                                                      },
+                                                            "custom":  {
+                                                                           "axisBorderShow":  false,
+                                                                           "axisCenteredZero":  false,
+                                                                           "axisColorMode":  "text",
+                                                                           "axisLabel":  "",
+                                                                           "axisPlacement":  "auto",
+                                                                           "barAlignment":  0,
+                                                                           "barWidthFactor":  0.6,
+                                                                           "drawStyle":  "line",
+                                                                           "fillOpacity":  0,
+                                                                           "gradientMode":  "none",
+                                                                           "hideFrom":  {
+                                                                                            "legend":  false,
+                                                                                            "tooltip":  false,
+                                                                                            "viz":  false
+                                                                                        },
+                                                                           "insertNulls":  false,
+                                                                           "lineInterpolation":  "linear",
+                                                                           "lineWidth":  1,
+                                                                           "pointSize":  5,
+                                                                           "scaleDistribution":  {
+                                                                                                     "type":  "linear"
+                                                                                                 },
+                                                                           "showPoints":  "auto",
+                                                                           "spanNulls":  false,
+                                                                           "stacking":  {
+                                                                                            "group":  "A",
+                                                                                            "mode":  "none"
+                                                                                        },
+                                                                           "thresholdsStyle":  {
+                                                                                                   "mode":  "off"
+                                                                                               }
+                                                                       },
+                                                            "mappings":  [
+
+                                                                         ],
+                                                            "thresholds":  {
+                                                                               "mode":  "absolute",
+                                                                               "steps":  [
+                                                                                             {
+                                                                                                 "color":  "green"
+                                                                                             },
+                                                                                             {
+                                                                                                 "color":  "red",
+                                                                                                 "value":  80
+                                                                                             }
+                                                                                         ]
+                                                                           }
+                                                        },
+                                           "overrides":  [
+
+                                                         ]
+                                       },
+                       "gridPos":  {
+                                       "h":  6,
+                                       "w":  8,
+                                       "x":  8,
+                                       "y":  0
+                                   },
+                       "id":  3,
+                       "options":  {
+                                       "legend":  {
+                                                      "calcs":  [
+
+                                                                ],
+                                                      "displayMode":  "list",
+                                                      "placement":  "bottom",
+                                                      "showLegend":  true
+                                                  },
+                                       "tooltip":  {
+                                                       "hideZeros":  false,
+                                                       "mode":  "single",
+                                                       "sort":  "none"
+                                                   }
+                                   },
+                       "pluginVersion":  "11.6.0",
+                       "targets":  [
+                                       {
+                                           "datasource":  {
+                                                              "type":  "grafana-postgresql-datasource",
+                                                              "uid":  "postgres-monitoramento"
+                                                          },
+                                           "editorMode":  "code",
+                                           "format":  "table",
+                                           "rawQuery":  true,
+                                           "rawSql":  "SELECT\r\n    timestamp AS \"time\",\r\n    escore_olhos AS \"Escore dos Olhos\"\r\nFROM telemetria\r\nWHERE $__timeFilter(timestamp)\r\n  AND escore_olhos IS NOT NULL\r\nORDER BY timestamp;",
+                                           "refId":  "A",
+                                           "sql":  {
+                                                       "columns":  [
+                                                                       {
+                                                                           "parameters":  [
+
+                                                                                          ],
+                                                                           "type":  "function"
+                                                                       }
+                                                                   ],
+                                                       "groupBy":  [
+                                                                       {
+                                                                           "property":  {
+                                                                                            "type":  "string"
+                                                                                        },
+                                                                           "type":  "groupBy"
+                                                                       }
+                                                                   ],
+                                                       "limit":  50
+                                                   }
+                                       }
+                                   ],
+                       "title":  "Escore dos Olhos",
+                       "type":  "timeseries"
+                   },
+                   {
+                       "datasource":  {
+                                          "type":  "grafana-postgresql-datasource",
+                                          "uid":  "postgres-monitoramento"
+                                      },
+                       "fieldConfig":  {
+                                           "defaults":  {
+                                                            "color":  {
+                                                                          "mode":  "palette-classic"
+                                                                      },
+                                                            "custom":  {
+                                                                           "axisBorderShow":  false,
+                                                                           "axisCenteredZero":  false,
+                                                                           "axisColorMode":  "text",
+                                                                           "axisLabel":  "",
+                                                                           "axisPlacement":  "auto",
+                                                                           "barAlignment":  0,
+                                                                           "barWidthFactor":  0.6,
+                                                                           "drawStyle":  "line",
+                                                                           "fillOpacity":  0,
+                                                                           "gradientMode":  "none",
+                                                                           "hideFrom":  {
+                                                                                            "legend":  false,
+                                                                                            "tooltip":  false,
+                                                                                            "viz":  false
+                                                                                        },
+                                                                           "insertNulls":  false,
+                                                                           "lineInterpolation":  "linear",
+                                                                           "lineWidth":  1,
+                                                                           "pointSize":  5,
+                                                                           "scaleDistribution":  {
+                                                                                                     "type":  "linear"
+                                                                                                 },
+                                                                           "showPoints":  "auto",
+                                                                           "spanNulls":  false,
+                                                                           "stacking":  {
+                                                                                            "group":  "A",
+                                                                                            "mode":  "none"
+                                                                                        },
+                                                                           "thresholdsStyle":  {
+                                                                                                   "mode":  "off"
+                                                                                               }
+                                                                       },
+                                                            "mappings":  [
+
+                                                                         ],
+                                                            "thresholds":  {
+                                                                               "mode":  "absolute",
+                                                                               "steps":  [
+                                                                                             {
+                                                                                                 "color":  "green"
+                                                                                             },
+                                                                                             {
+                                                                                                 "color":  "red",
+                                                                                                 "value":  80
+                                                                                             }
+                                                                                         ]
+                                                                           }
+                                                        },
+                                           "overrides":  [
+
+                                                         ]
+                                       },
+                       "gridPos":  {
+                                       "h":  6,
+                                       "w":  8,
+                                       "x":  16,
+                                       "y":  0
+                                   },
+                       "id":  5,
+                       "options":  {
+                                       "legend":  {
+                                                      "calcs":  [
+
+                                                                ],
+                                                      "displayMode":  "list",
+                                                      "placement":  "bottom",
+                                                      "showLegend":  true
+                                                  },
+                                       "tooltip":  {
+                                                       "hideZeros":  false,
+                                                       "mode":  "single",
+                                                       "sort":  "none"
+                                                   }
+                                   },
+                       "pluginVersion":  "11.6.0",
+                       "targets":  [
+                                       {
+                                           "datasource":  {
+                                                              "type":  "grafana-postgresql-datasource",
+                                                              "uid":  "postgres-monitoramento"
+                                                          },
+                                           "editorMode":  "code",
+                                           "format":  "table",
+                                           "rawQuery":  true,
+                                           "rawSql":  "SELECT\r\n    timestamp AS \"time\",\r\n    escore_cabeca AS \"Escore da CabeÃ§a\"\r\nFROM telemetria\r\nWHERE $__timeFilter(timestamp)\r\n  AND escore_cabeca IS NOT NULL\r\nORDER BY timestamp;",
+                                           "refId":  "A",
+                                           "sql":  {
+                                                       "columns":  [
+                                                                       {
+                                                                           "parameters":  [
+
+                                                                                          ],
+                                                                           "type":  "function"
+                                                                       }
+                                                                   ],
+                                                       "groupBy":  [
+                                                                       {
+                                                                           "property":  {
+                                                                                            "type":  "string"
+                                                                                        },
+                                                                           "type":  "groupBy"
+                                                                       }
+                                                                   ],
+                                                       "limit":  50
+                                                   }
+                                       }
+                                   ],
+                       "title":  "Escore da CabeÃ§a",
+                       "type":  "timeseries"
+                   },
+                   {
+                       "datasource":  {
+                                          "type":  "grafana-postgresql-datasource",
+                                          "uid":  "postgres-monitoramento"
+                                      },
+                       "fieldConfig":  {
+                                           "defaults":  {
+                                                            "color":  {
+                                                                          "mode":  "palette-classic"
+                                                                      },
+                                                            "custom":  {
+                                                                           "hideFrom":  {
+                                                                                            "legend":  false,
+                                                                                            "tooltip":  false,
+                                                                                            "viz":  false
+                                                                                        }
+                                                                       },
+                                                            "mappings":  [
+
+                                                                         ]
+                                                        },
+                                           "overrides":  [
+
+                                                         ]
+                                       },
+                       "gridPos":  {
+                                       "h":  6,
+                                       "w":  5,
+                                       "x":  0,
+                                       "y":  6
+                                   },
+                       "id":  7,
+                       "options":  {
+                                       "legend":  {
+                                                      "displayMode":  "list",
+                                                      "placement":  "bottom",
+                                                      "showLegend":  true
+                                                  },
+                                       "pieType":  "pie",
+                                       "reduceOptions":  {
+                                                             "calcs":  [
+                                                                           "lastNotNull"
+                                                                       ],
+                                                             "fields":  "",
+                                                             "values":  false
+                                                         },
+                                       "tooltip":  {
+                                                       "hideZeros":  false,
+                                                       "mode":  "single",
+                                                       "sort":  "none"
+                                                   }
+                                   },
+                       "pluginVersion":  "11.6.0",
+                       "targets":  [
+                                       {
+                                           "datasource":  {
+                                                              "type":  "grafana-postgresql-datasource",
+                                                              "uid":  "postgres-monitoramento"
+                                                          },
+                                           "editorMode":  "code",
+                                           "format":  "table",
+                                           "rawQuery":  true,
+                                           "rawSql":  "SELECT\r\n    COALESCE(estado, \u0027NÃ£o informado\u0027) AS \"Estado\",\r\n    COUNT(*) AS \"Quantidade\"\r\nFROM telemetria\r\nWHERE $__timeFilter(timestamp)\r\nGROUP BY estado\r\nORDER BY COUNT(*) DESC;",
+                                           "refId":  "A",
+                                           "sql":  {
+                                                       "columns":  [
+                                                                       {
+                                                                           "parameters":  [
+
+                                                                                          ],
+                                                                           "type":  "function"
+                                                                       }
+                                                                   ],
+                                                       "groupBy":  [
+                                                                       {
+                                                                           "property":  {
+                                                                                            "type":  "string"
+                                                                                        },
+                                                                           "type":  "groupBy"
+                                                                       }
+                                                                   ],
+                                                       "limit":  50
+                                                   }
+                                       }
+                                   ],
+                       "title":  "DistribuiÃ§Ã£o de Estados de Monitoramento",
+                       "type":  "piechart"
+                   },
+                   {
+                       "datasource":  {
+                                          "type":  "grafana-postgresql-datasource",
+                                          "uid":  "postgres-monitoramento"
+                                      },
+                       "fieldConfig":  {
+                                           "defaults":  {
+                                                            "color":  {
+                                                                          "mode":  "palette-classic"
+                                                                      },
+                                                            "custom":  {
+                                                                           "axisBorderShow":  false,
+                                                                           "axisCenteredZero":  false,
+                                                                           "axisColorMode":  "text",
+                                                                           "axisLabel":  "",
+                                                                           "axisPlacement":  "auto",
+                                                                           "barAlignment":  0,
+                                                                           "barWidthFactor":  0.6,
+                                                                           "drawStyle":  "line",
+                                                                           "fillOpacity":  0,
+                                                                           "gradientMode":  "none",
+                                                                           "hideFrom":  {
+                                                                                            "legend":  false,
+                                                                                            "tooltip":  false,
+                                                                                            "viz":  false
+                                                                                        },
+                                                                           "insertNulls":  false,
+                                                                           "lineInterpolation":  "linear",
+                                                                           "lineWidth":  1,
+                                                                           "pointSize":  5,
+                                                                           "scaleDistribution":  {
+                                                                                                     "type":  "linear"
+                                                                                                 },
+                                                                           "showPoints":  "auto",
+                                                                           "spanNulls":  false,
+                                                                           "stacking":  {
+                                                                                            "group":  "A",
+                                                                                            "mode":  "none"
+                                                                                        },
+                                                                           "thresholdsStyle":  {
+                                                                                                   "mode":  "off"
+                                                                                               }
+                                                                       },
+                                                            "mappings":  [
+
+                                                                         ],
+                                                            "thresholds":  {
+                                                                               "mode":  "absolute",
+                                                                               "steps":  [
+                                                                                             {
+                                                                                                 "color":  "green"
+                                                                                             },
+                                                                                             {
+                                                                                                 "color":  "red",
+                                                                                                 "value":  80
+                                                                                             }
+                                                                                         ]
+                                                                           }
+                                                        },
+                                           "overrides":  [
+
+                                                         ]
+                                       },
+                       "gridPos":  {
+                                       "h":  5,
+                                       "w":  19,
+                                       "x":  5,
+                                       "y":  6
+                                   },
+                       "id":  2,
+                       "options":  {
+                                       "legend":  {
+                                                      "calcs":  [
+
+                                                                ],
+                                                      "displayMode":  "list",
+                                                      "placement":  "bottom",
+                                                      "showLegend":  true
+                                                  },
+                                       "tooltip":  {
+                                                       "hideZeros":  false,
+                                                       "mode":  "single",
+                                                       "sort":  "none"
+                                                   }
+                                   },
+                       "pluginVersion":  "11.6.0",
+                       "targets":  [
+                                       {
+                                           "datasource":  {
+                                                              "type":  "grafana-postgresql-datasource",
+                                                              "uid":  "postgres-monitoramento"
+                                                          },
+                                           "editorMode":  "code",
+                                           "format":  "table",
+                                           "rawQuery":  true,
+                                           "rawSql":  "SELECT\r\n    timestamp AS \"time\",\r\n    perclos AS \"PERCLOS\"\r\nFROM telemetria\r\nWHERE $__timeFilter(timestamp)\r\n  AND perclos IS NOT NULL\r\nORDER BY timestamp;",
+                                           "refId":  "A",
+                                           "sql":  {
+                                                       "columns":  [
+                                                                       {
+                                                                           "parameters":  [
+
+                                                                                          ],
+                                                                           "type":  "function"
+                                                                       }
+                                                                   ],
+                                                       "groupBy":  [
+                                                                       {
+                                                                           "property":  {
+                                                                                            "type":  "string"
+                                                                                        },
+                                                                           "type":  "groupBy"
+                                                                       }
+                                                                   ],
+                                                       "limit":  50
+                                                   }
+                                       }
+                                   ],
+                       "title":  "PERCLOS ao longo do tempo",
+                       "type":  "timeseries"
+                   },
+                   {
+                       "datasource":  {
+                                          "type":  "grafana-postgresql-datasource",
+                                          "uid":  "postgres-monitoramento"
+                                      },
+                       "fieldConfig":  {
+                                           "defaults":  {
+                                                            "color":  {
+                                                                          "mode":  "thresholds"
+                                                                      },
+                                                            "custom":  {
+                                                                           "align":  "auto",
+                                                                           "cellOptions":  {
+                                                                                               "type":  "auto"
+                                                                                           },
+                                                                           "inspect":  false
+                                                                       },
+                                                            "mappings":  [
+
+                                                                         ],
+                                                            "thresholds":  {
+                                                                               "mode":  "absolute",
+                                                                               "steps":  [
+                                                                                             {
+                                                                                                 "color":  "green"
+                                                                                             },
+                                                                                             {
+                                                                                                 "color":  "red",
+                                                                                                 "value":  80
+                                                                                             }
+                                                                                         ]
+                                                                           }
+                                                        },
+                                           "overrides":  [
+
+                                                         ]
+                                       },
+                       "gridPos":  {
+                                       "h":  7,
+                                       "w":  19,
+                                       "x":  5,
+                                       "y":  11
+                                   },
+                       "id":  8,
+                       "options":  {
+                                       "cellHeight":  "sm",
+                                       "footer":  {
+                                                      "countRows":  false,
+                                                      "fields":  "",
+                                                      "reducer":  [
+                                                                      "sum"
+                                                                  ],
+                                                      "show":  false
+                                                  },
+                                       "showHeader":  true
+                                   },
+                       "pluginVersion":  "11.6.0",
+                       "targets":  [
+                                       {
+                                           "datasource":  {
+                                                              "type":  "grafana-postgresql-datasource",
+                                                              "uid":  "postgres-monitoramento"
+                                                          },
+                                           "editorMode":  "code",
+                                           "format":  "table",
+                                           "rawQuery":  true,
+                                           "rawSql":  "SELECT\r\n    inicio_em AS \"Data e Hora\",\r\n    tipo AS \"Tipo\",\r\n    descricao AS \"DescriÃ§Ã£o\",\r\n    duracao_segundos AS \"DuraÃ§Ã£o (segundos)\",\r\n    confirmado AS \"Confirmado\",\r\n    motivo AS \"Motivo\"\r\nFROM eventos\r\nWHERE inicio_em IS NOT NULL\r\n  AND $__timeFilter(inicio_em)\r\nORDER BY inicio_em DESC\r\nLIMIT 100;",
+                                           "refId":  "A",
+                                           "sql":  {
+                                                       "columns":  [
+                                                                       {
+                                                                           "parameters":  [
+
+                                                                                          ],
+                                                                           "type":  "function"
+                                                                       }
+                                                                   ],
+                                                       "groupBy":  [
+                                                                       {
+                                                                           "property":  {
+                                                                                            "type":  "string"
+                                                                                        },
+                                                                           "type":  "groupBy"
+                                                                       }
+                                                                   ],
+                                                       "limit":  50
+                                                   }
+                                       }
+                                   ],
+                       "title":  "HistÃ³rico de Eventos",
+                       "type":  "table"
+                   },
+                   {
+                       "datasource":  {
+                                          "type":  "grafana-postgresql-datasource",
+                                          "uid":  "postgres-monitoramento"
+                                      },
+                       "fieldConfig":  {
+                                           "defaults":  {
+                                                            "color":  {
+                                                                          "mode":  "thresholds"
+                                                                      },
+                                                            "mappings":  [
+
+                                                                         ],
+                                                            "thresholds":  {
+                                                                               "mode":  "absolute",
+                                                                               "steps":  [
+                                                                                             {
+                                                                                                 "color":  "green"
+                                                                                             },
+                                                                                             {
+                                                                                                 "color":  "red",
+                                                                                                 "value":  80
+                                                                                             }
+                                                                                         ]
+                                                                           }
+                                                        },
+                                           "overrides":  [
+
+                                                         ]
+                                       },
+                       "gridPos":  {
+                                       "h":  3,
+                                       "w":  5,
+                                       "x":  0,
+                                       "y":  12
+                                   },
+                       "id":  6,
+                       "options":  {
+                                       "colorMode":  "value",
+                                       "graphMode":  "area",
+                                       "justifyMode":  "auto",
+                                       "orientation":  "auto",
+                                       "percentChangeColorMode":  "standard",
+                                       "reduceOptions":  {
+                                                             "calcs":  [
+                                                                           "lastNotNull"
+                                                                       ],
+                                                             "fields":  "",
+                                                             "values":  false
+                                                         },
+                                       "showPercentChange":  false,
+                                       "textMode":  "auto",
+                                       "wideLayout":  true
+                                   },
+                       "pluginVersion":  "11.6.0",
+                       "targets":  [
+                                       {
+                                           "datasource":  {
+                                                              "type":  "grafana-postgresql-datasource",
+                                                              "uid":  "postgres-monitoramento"
+                                                          },
+                                           "editorMode":  "code",
+                                           "format":  "table",
+                                           "rawQuery":  true,
+                                           "rawSql":  "SELECT\r\n    COUNT(*) AS \"Total de Eventos\"\r\nFROM eventos\r\nWHERE inicio_em IS NOT NULL\r\n  AND $__timeFilter(inicio_em);",
+                                           "refId":  "A",
+                                           "sql":  {
+                                                       "columns":  [
+                                                                       {
+                                                                           "parameters":  [
+
+                                                                                          ],
+                                                                           "type":  "function"
+                                                                       }
+                                                                   ],
+                                                       "groupBy":  [
+                                                                       {
+                                                                           "property":  {
+                                                                                            "type":  "string"
+                                                                                        },
+                                                                           "type":  "groupBy"
+                                                                       }
+                                                                   ],
+                                                       "limit":  50
+                                                   }
+                                       }
+                                   ],
+                       "title":  "Total de Eventos detectados",
+                       "type":  "stat"
+                   },
+                   {
+                       "datasource":  {
+                                          "type":  "grafana-postgresql-datasource",
+                                          "uid":  "postgres-monitoramento"
+                                      },
+                       "fieldConfig":  {
+                                           "defaults":  {
+                                                            "color":  {
+                                                                          "mode":  "thresholds"
+                                                                      },
+                                                            "mappings":  [
+
+                                                                         ],
+                                                            "thresholds":  {
+                                                                               "mode":  "absolute",
+                                                                               "steps":  [
+                                                                                             {
+                                                                                                 "color":  "green"
+                                                                                             },
+                                                                                             {
+                                                                                                 "color":  "red",
+                                                                                                 "value":  80
+                                                                                             }
+                                                                                         ]
+                                                                           }
+                                                        },
+                                           "overrides":  [
+
+                                                         ]
+                                       },
+                       "gridPos":  {
+                                       "h":  3,
+                                       "w":  5,
+                                       "x":  0,
+                                       "y":  15
+                                   },
+                       "id":  1,
+                       "options":  {
+                                       "colorMode":  "value",
+                                       "graphMode":  "area",
+                                       "justifyMode":  "auto",
+                                       "orientation":  "auto",
+                                       "percentChangeColorMode":  "standard",
+                                       "reduceOptions":  {
+                                                             "calcs":  [
+                                                                           "lastNotNull"
+                                                                       ],
+                                                             "fields":  "",
+                                                             "values":  false
+                                                         },
+                                       "showPercentChange":  false,
+                                       "textMode":  "auto",
+                                       "wideLayout":  true
+                                   },
+                       "pluginVersion":  "11.6.0",
+                       "targets":  [
+                                       {
+                                           "datasource":  {
+                                                              "type":  "grafana-postgresql-datasource",
+                                                              "uid":  "postgres-monitoramento"
+                                                          },
+                                           "editorMode":  "code",
+                                           "format":  "table",
+                                           "rawQuery":  true,
+                                           "rawSql":  "SELECT\r\n    timestamp AS time,\r\n    escore_total AS \"Escore Total\"\r\nFROM telemetria\r\nWHERE $__timeFilter(timestamp)\r\n  AND escore_total IS NOT NULL\r\nORDER BY timestamp DESC\r\nLIMIT 1;",
+                                           "refId":  "A",
+                                           "sql":  {
+                                                       "columns":  [
+                                                                       {
+                                                                           "parameters":  [
+
+                                                                                          ],
+                                                                           "type":  "function"
+                                                                       }
+                                                                   ],
+                                                       "groupBy":  [
+                                                                       {
+                                                                           "property":  {
+                                                                                            "type":  "string"
+                                                                                        },
+                                                                           "type":  "groupBy"
+                                                                       }
+                                                                   ],
+                                                       "limit":  50
+                                                   }
+                                       }
+                                   ],
+                       "title":  "Escore total de Fadiga",
+                       "type":  "stat"
+                   },
+                   {
+                       "datasource":  {
+                                          "type":  "grafana-postgresql-datasource",
+                                          "uid":  "postgres-monitoramento"
+                                      },
+                       "fieldConfig":  {
+                                           "defaults":  {
+                                                            "color":  {
+                                                                          "mode":  "thresholds"
+                                                                      },
+                                                            "custom":  {
+                                                                           "align":  "auto",
+                                                                           "cellOptions":  {
+                                                                                               "type":  "auto"
+                                                                                           },
+                                                                           "inspect":  false
+                                                                       },
+                                                            "mappings":  [
+
+                                                                         ],
+                                                            "thresholds":  {
+                                                                               "mode":  "absolute",
+                                                                               "steps":  [
+                                                                                             {
+                                                                                                 "color":  "green"
+                                                                                             },
+                                                                                             {
+                                                                                                 "color":  "red",
+                                                                                                 "value":  80
+                                                                                             }
+                                                                                         ]
+                                                                           }
+                                                        },
+                                           "overrides":  [
+
+                                                         ]
+                                       },
+                       "gridPos":  {
+                                       "h":  6,
+                                       "w":  24,
+                                       "x":  0,
+                                       "y":  18
+                                   },
+                       "id":  9,
+                       "options":  {
+                                       "cellHeight":  "sm",
+                                       "footer":  {
+                                                      "countRows":  false,
+                                                      "fields":  "",
+                                                      "reducer":  [
+                                                                      "sum"
+                                                                  ],
+                                                      "show":  false
+                                                  },
+                                       "showHeader":  true
+                                   },
+                       "pluginVersion":  "11.6.0",
+                       "targets":  [
+                                       {
+                                           "datasource":  {
+                                                              "type":  "grafana-postgresql-datasource",
+                                                              "uid":  "postgres-monitoramento"
+                                                          },
+                                           "editorMode":  "code",
+                                           "format":  "table",
+                                           "rawQuery":  true,
+                                           "rawSql":  "SELECT\r\n    timestamp AS \"Data e Hora\",\r\n    session_id AS \"SessÃ£o\",\r\n    frame AS \"Frame\",\r\n    estado AS \"Estado\",\r\n    escore_total AS \"Escore Total\",\r\n    escore_olhos AS \"Escore dos Olhos\",\r\n    escore_boca AS \"Escore da Boca\",\r\n    escore_cabeca AS \"Escore da CabeÃ§a\",\r\n    perclos AS \"PERCLOS\"\r\nFROM telemetria\r\nWHERE $__timeFilter(timestamp)\r\nORDER BY timestamp DESC\r\nLIMIT 100;",
+                                           "refId":  "A",
+                                           "sql":  {
+                                                       "columns":  [
+                                                                       {
+                                                                           "parameters":  [
+
+                                                                                          ],
+                                                                           "type":  "function"
+                                                                       }
+                                                                   ],
+                                                       "groupBy":  [
+                                                                       {
+                                                                           "property":  {
+                                                                                            "type":  "string"
+                                                                                        },
+                                                                           "type":  "groupBy"
+                                                                       }
+                                                                   ],
+                                                       "limit":  50
+                                                   }
+                                       }
+                                   ],
+                       "title":  "HistÃ³rico de mediÃ§Ãµes",
+                       "type":  "table"
+                   }
+               ],
+    "preload":  false,
+    "schemaVersion":  41,
+    "tags":  [
+
+             ],
+    "templating":  {
+                       "list":  [
+
+                                ]
+                   },
+    "time":  {
+                 "from":  "2026-11-26T03:00:00.000Z",
+                 "to":  "2026-12-06T02:59:59.000Z"
+             },
+    "timepicker":  {
+
+                   },
+    "timezone":  "",
+    "title":  "dashboard11",
+    "uid":  "cg5kgwzod4r9ce",
+    "version":  12
+}
